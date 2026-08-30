@@ -1,0 +1,105 @@
+import { createSignal, onMount, Show } from "solid-js";
+
+import TopBar from "@/components/TopBar";
+import Pins from "@/components/Pins";
+import { getPosts } from "@/api/posts";
+import type { Post } from "@/types/post";
+
+const THEMES = ["amber", "oled", "light", "dark", "cappuccino"];
+
+export default function Gallery() {
+    const [posts, setPosts] = createSignal<Post[]>([]);
+    const [page, setPage] = createSignal(1);
+    const [totalPages, setTotalPages] = createSignal(1);
+    const [loading, setLoading] = createSignal(false);
+    const [error, setError] = createSignal<string | null>(null);
+
+    const [theme, setTheme] = createSignal(
+        localStorage.getItem("gallery-theme") || "oled",
+    );
+
+    function applyTheme(name: string) {
+        document.documentElement.dataset.theme = name;
+        localStorage.setItem("gallery-theme", name);
+        setTheme(name);
+    }
+
+    function cycleTheme() {
+        const current = theme();
+        const index = THEMES.indexOf(current);
+        const next = THEMES[(index + 1) % THEMES.length];
+
+        applyTheme(next);
+    }
+
+    async function loadPosts(targetPage = page()) {
+        setLoading(true);
+        setError(null);
+
+        try {
+            const data = await getPosts(targetPage);
+
+            setPosts(data.content);
+            setTotalPages(data.pages || 1);
+            setPage(targetPage);
+        } catch (err) {
+            console.error(err);
+
+            setError(
+                "Не удалось загрузить картинки. Проверь, запущен ли сервер.",
+            );
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    function next() {
+        if (page() < totalPages()) {
+            loadPosts(page() + 1);
+        }
+    }
+
+    function prev() {
+        if (page() > 1) {
+            loadPosts(page() - 1);
+        }
+    }
+
+    onMount(() => {
+        applyTheme(theme());
+        loadPosts();
+    });
+
+    return (
+        <>
+            <TopBar
+                page={page()}
+                totalPages={totalPages()}
+                loading={loading()}
+                onPrev={prev}
+                onNext={next}
+                onPage={loadPosts}
+                onTheme={cycleTheme}
+            />
+
+            <Show when={loading()}>
+                <div class="status">Загрузка…</div>
+            </Show>
+
+            <Show when={error()}>
+                {(message) => <div class="status error">{message()}</div>}
+            </Show>
+
+            <Show
+                when={!loading() && !error() && posts().length > 0}
+                fallback={
+                    <Show when={!loading() && !error()}>
+                        <div class="status">На этой странице ничего нет.</div>
+                    </Show>
+                }
+            >
+                <Pins posts={posts()} />
+            </Show>
+        </>
+    );
+}
