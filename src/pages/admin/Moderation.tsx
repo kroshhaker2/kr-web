@@ -9,7 +9,6 @@ import { updatePost, deletePost } from "@/api/posts";
 export default function Moderation() {
     const [posts, setPosts] = createSignal<Post[]>([]);
     const [page, setPage] = createSignal(1);
-    const [totalPages, setTotalPages] = createSignal(1);
     const [loading, setLoading] = createSignal(false);
     const [selected, setSelected] = createSignal<Set<string>>(new Set());
     const [error, setError] = createSignal<string | null>(null);
@@ -40,7 +39,6 @@ export default function Moderation() {
             const data = await getPosts(targetPage, 10000, filterQuery());
 
             setPosts(data.content);
-            setTotalPages(data.pages || 1);
             setPage(targetPage);
         } catch (err) {
             console.error(err);

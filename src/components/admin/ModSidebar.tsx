@@ -1,12 +1,6 @@
 import { createSignal } from "solid-js";
 import { A } from "@solidjs/router";
 
-interface Filters {
-    tags: string[];
-    author: string;
-    type: "image" | "animated" | "";
-}
-
 interface ModSidebarProps {
     selectedCount: number;
     onAddTag: (tag: string) => void;

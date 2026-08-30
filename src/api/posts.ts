@@ -1,4 +1,4 @@
-import type { PostsResponse, PostFilters } from "../types/post";
+import type { PostsResponse } from "../types/post";
 
 const API = "http://192.168.1.214:3000";
 
