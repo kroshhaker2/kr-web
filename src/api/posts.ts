@@ -1,6 +1,10 @@
-import type { PostsResponse } from "../types/post";
+import type {
+    PostsResponse,
+    UpdatePostPayload,
+    UpdatePostResponse,
+} from "../types/post";
 
-const API = "https://api.kr.kroshhaker.dev";
+const API = "https://api.kr.kroshhaker.dev/api/v1";
 
 export async function getPosts(
     page: number,
@@ -17,37 +21,41 @@ export async function getPosts(
         params.set("tags", tokens.join(" "));
     }
 
-    const response = await fetch(`${API}/api/v1/posts?${params.toString()}`);
+    const response = await fetch(`${API}/posts?${params.toString()}`);
 
     if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
     }
 
-    return response.json();
+    return (await response.json()) as PostsResponse;
 }
 
 export async function updatePost(
     id: string,
-    payload: Partial<{ tags: string[]; like: boolean }>,
-) {
-    const response = await fetch(`http://localhost:3000/api/v1/post/${id}`, {
+    payload: UpdatePostPayload,
+): Promise<UpdatePostResponse> {
+    const response = await fetch(`${API}/post/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
     });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    return response.json();
+
+    if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+    }
+
+    return (await response.json()) as UpdatePostResponse;
 }
 
 export async function deletePost(id: string) {
-    const response = await fetch(`http://localhost:3000/api/post/${id}`, {
+    const response = await fetch(`${API}/post/${id}`, {
         method: "DELETE",
     });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
 }
 
 export async function setLike(id: string, liked: boolean): Promise<void> {
-    const response = await fetch(`${API}/api/post/${id}`, {
+    const response = await fetch(`${API}/post/${id}`, {
         method: "PUT",
         headers: {
             "Content-Type": "application/json",

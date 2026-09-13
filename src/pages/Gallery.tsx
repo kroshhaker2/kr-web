@@ -18,8 +18,8 @@ export default function Gallery() {
         localStorage.getItem("gallery-theme") || "oled",
     );
 
-    function applyTheme(name: string) {
-        document.documentElement.dataset.theme = name;
+    function applyTheme(name: string): void {
+        document.documentElement.setAttribute("data-theme", name);
         localStorage.setItem("gallery-theme", name);
         setTheme(name);
     }
@@ -53,21 +53,21 @@ export default function Gallery() {
         }
     }
 
-    function next() {
+    function next(): void {
         if (page() < totalPages()) {
-            loadPosts(page() + 1);
+            void loadPosts(page() + 1);
         }
     }
 
-    function prev() {
+    function prev(): void {
         if (page() > 1) {
-            loadPosts(page() - 1);
+            void loadPosts(page() - 1);
         }
     }
 
     onMount(() => {
         applyTheme(theme());
-        loadPosts();
+        void loadPosts();
     });
 
     return (
@@ -78,7 +78,7 @@ export default function Gallery() {
                 loading={loading()}
                 onPrev={prev}
                 onNext={next}
-                onPage={loadPosts}
+                onPage={(targetPage) => void loadPosts(targetPage)}
                 onTheme={cycleTheme}
             />
 

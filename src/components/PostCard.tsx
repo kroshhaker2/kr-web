@@ -34,6 +34,10 @@ export default function PostCard(props: Props) {
         }
     }
 
+    function handleLikeClick(event: MouseEvent): void {
+        void toggleLike(event);
+    }
+
     function handleClick(event: MouseEvent) {
         if (props.onClick) {
             event.preventDefault();
@@ -59,7 +63,7 @@ export default function PostCard(props: Props) {
                     }}
                     disabled={saving()}
                     aria-label="Лайк"
-                    onClick={toggleLike}
+                    onClick={handleLikeClick}
                 >
                     ♥
                 </button>

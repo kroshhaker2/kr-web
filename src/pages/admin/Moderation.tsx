@@ -1,10 +1,10 @@
-import { createSignal, onMount, Show } from "solid-js";
+import { createSignal, onCleanup, onMount, Show } from "solid-js";
 
 import Pins from "@/components/Pins";
-import { getPosts } from "@/api/posts";
+import { getPosts, updatePost } from "@/api/posts";
 import type { Post } from "@/types/post";
 import ModSidebar from "@/components/admin/ModSidebar";
-import { updatePost, deletePost } from "@/api/posts";
+import { deletePost } from "@/api/posts";
 
 export default function Moderation() {
     const [posts, setPosts] = createSignal<Post[]>([]);
@@ -13,23 +13,43 @@ export default function Moderation() {
     const [selected, setSelected] = createSignal<Set<string>>(new Set());
     const [error, setError] = createSignal<string | null>(null);
     const [filterQuery, setFilterQuery] = createSignal("");
-    let filterDebounce: ReturnType<typeof setTimeout>;
+    const [filterDebounce, setFilterDebounce] = createSignal<
+        ReturnType<typeof setTimeout> | undefined
+    >();
 
     const [theme, setTheme] = createSignal(
         localStorage.getItem("gallery-theme") || "oled",
     );
 
     function applyTheme(name: string) {
-        document.documentElement.dataset.theme = name;
+        document.documentElement.setAttribute("data-theme", name);
         localStorage.setItem("gallery-theme", name);
         setTheme(name);
     }
 
-    function handleFilterChange(query: string) {
+    function handleFilterChange(query: string): void {
         setFilterQuery(query);
-        clearTimeout(filterDebounce);
-        filterDebounce = setTimeout(() => loadPosts(1), 300);
+
+        const current = filterDebounce();
+
+        if (current) {
+            clearTimeout(current);
+        }
+
+        setFilterDebounce(
+            setTimeout(() => {
+                void loadPosts(1);
+            }, 300),
+        );
     }
+
+    onCleanup(() => {
+        const current = filterDebounce();
+
+        if (current) {
+            clearTimeout(current);
+        }
+    });
 
     async function loadPosts(targetPage = page()) {
         setLoading(true);
@@ -151,16 +171,16 @@ export default function Moderation() {
 
     onMount(() => {
         applyTheme(theme());
-        loadPosts();
+        void loadPosts();
     });
 
     return (
         <div class="moderation-layout">
             <ModSidebar
                 selectedCount={selected().size}
-                onAddTag={addTagToSelected}
-                onRemoveTag={removeTagFromSelected}
-                onDeleteSelected={deleteSelectedPosts}
+                onAddTag={(tag) => void addTagToSelected(tag)}
+                onRemoveTag={(tag) => void removeTagFromSelected(tag)}
+                onDeleteSelected={() => void deleteSelectedPosts()}
                 onFilterChange={handleFilterChange}
             />
 
