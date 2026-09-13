@@ -77,12 +77,12 @@ jobs:
 
       - name: Update image tag
         run: |
-          sed -i 's|tag: ".*"|tag: "${{ needs.docker.outputs.version }}"|' k8s-manifests/kr-server/values.yaml
+          sed -i 's|tag: ".*"|tag: "${{ needs.docker.outputs.version }}"|' k8s-manifests/kr-web/values.yaml
 
       - name: Commit and push
         run: |
           git config user.email "ci@kroshhaker.dev"
           git config user.name "CI Bot"
           git add k8s-manifests/kr-web/values.yaml
-          git diff --staged --quiet || git commit -m "Deploy kr-server:${{ needs.docker.outputs.version }}"
+          git diff --staged --quiet || git commit -m "Deploy kr-web:${{ needs.docker.outputs.version }}"
           git push
