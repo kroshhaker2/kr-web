@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.2](https://github.com/kroshhaker2/kr-web/compare/v1.0.1...v1.0.2) (2026-09-13)
+
+
+### Bug Fixes
+
+* eslint errors ([5b66994](https://github.com/kroshhaker2/kr-web/commit/5b669942f0a266f26f6e52a30005d2e2083ad708))
+
 ## [1.0.1](https://github.com/kroshhaker2/kr-web/compare/v1.0.0...v1.0.1) (2026-09-13)
 
 
