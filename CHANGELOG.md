@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.1](https://github.com/kroshhaker2/kr-web/compare/v1.0.0...v1.0.1) (2026-09-13)
+
+
+### Bug Fixes
+
+* pnpm version ([b6ce2c0](https://github.com/kroshhaker2/kr-web/commit/b6ce2c0c58f12a1fcfa51a5e798d83f0f09ada04))
+
 ## 1.0.0 (2026-09-13)
 
 
