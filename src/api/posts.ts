@@ -1,6 +1,6 @@
 import type { PostsResponse } from "../types/post";
 
-const API = "http://192.168.1.214:3000";
+const API = "https://api.kr.kroshhaker.dev";
 
 export async function getPosts(
     page: number,
@@ -17,7 +17,7 @@ export async function getPosts(
         params.set("tags", tokens.join(" "));
     }
 
-    const response = await fetch(`${API}/api/posts?${params.toString()}`);
+    const response = await fetch(`${API}/api/v1/posts?${params.toString()}`);
 
     if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
@@ -30,7 +30,7 @@ export async function updatePost(
     id: string,
     payload: Partial<{ tags: string[]; like: boolean }>,
 ) {
-    const response = await fetch(`http://localhost:3000/api/post/${id}`, {
+    const response = await fetch(`http://localhost:3000/api/v1/post/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

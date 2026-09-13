@@ -1,0 +1,88 @@
+name: Build and Deploy
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+  docker:
+    needs: check
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.vars.outputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Extract version from tag
+        id: vars
+        run: echo "version=${GITHUB_REF#refs/tags/v}" >> "$GITHUB_OUTPUT"
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: production
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}:${{ steps.vars.outputs.version }}
+            ghcr.io/${{ github.repository }}:latest
+
+  update-manifests:
+    needs: docker
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout manifests repo
+        uses: actions/checkout@v4
+        with:
+          repository: kroshhaker2/kr-infr
+          token: ${{ secrets.MANIFESTS_REPO_TOKEN }}
+
+      - name: Update image tag
+        run: |
+          sed -i 's|tag: ".*"|tag: "${{ needs.docker.outputs.version }}"|' k8s-manifests/kr-server/values.yaml
+
+      - name: Commit and push
+        run: |
+          git config user.email "ci@kroshhaker.dev"
+          git config user.name "CI Bot"
+          git add k8s-manifests/kr-web/values.yaml
+          git diff --staged --quiet || git commit -m "Deploy kr-server:${{ needs.docker.outputs.version }}"
+          git push
