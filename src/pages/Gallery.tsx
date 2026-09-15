@@ -4,7 +4,6 @@ import TopBar from "@/components/TopBar";
 import Pins from "@/components/Pins";
 import { getPosts } from "@/api/posts";
 import type { Post } from "@/types/post";
-import { loadUser } from "@/stores/auth";
 
 const THEMES = ["amber", "oled", "light", "dark", "cappuccino"];
 
@@ -68,7 +67,6 @@ export default function Gallery() {
 
     onMount(() => {
         applyTheme(theme());
-        void loadUser();
         void loadPosts();
     });
 

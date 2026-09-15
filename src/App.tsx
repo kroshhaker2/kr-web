@@ -1,4 +1,6 @@
 import { Router, Route } from "@solidjs/router";
+import { onMount } from "solid-js";
+import { loadUser } from "./stores/auth";
 
 import Gallery from "@/pages/Gallery";
 import Login from "@/pages/Login";
@@ -12,6 +14,10 @@ import Users from "@/pages/admin/Users";
 import Settings from "@/pages/admin/Settings";
 
 export default function App() {
+    onMount(() => {
+        void loadUser();
+    });
+
     return (
         <Router>
             <Route path="/" component={Gallery} />
