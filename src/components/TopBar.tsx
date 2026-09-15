@@ -1,3 +1,5 @@
+import UserButton from "./UserButton";
+
 interface Props {
     page: number;
     totalPages: number;
@@ -6,6 +8,9 @@ interface Props {
     onNext: () => void;
     onPage: (page: number) => void;
     onTheme: () => void;
+    user: {
+        username: string;
+    } | null;
 }
 
 export default function TopBar(props: Props) {
@@ -33,10 +38,7 @@ export default function TopBar(props: Props) {
 
                     const page = Number(event.currentTarget.value);
 
-                    if (
-                        page >= 1 &&
-                        page <= props.totalPages
-                    ) {
+                    if (page >= 1 && page <= props.totalPages) {
                         props.onPage(page);
                         event.currentTarget.value = "";
                     }
@@ -45,21 +47,17 @@ export default function TopBar(props: Props) {
 
             <button
                 class="btn"
-                disabled={
-                    props.loading ||
-                    props.page >= props.totalPages
-                }
+                disabled={props.loading || props.page >= props.totalPages}
                 onClick={props.onNext}
             >
                 Дальше →
             </button>
 
-            <button
-                class="btn"
-                onClick={props.onTheme}
-            >
-                🎨
+            <button class="btn" onClick={props.onTheme}>
+                Тема
             </button>
+
+            <UserButton/>
         </div>
     );
 }
