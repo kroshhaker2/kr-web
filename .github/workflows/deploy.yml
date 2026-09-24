@@ -40,6 +40,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.vars.outputs.version }}
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -61,6 +62,8 @@ jobs:
           context: .
           target: production
           push: true
+          build-args: |
+            VITE_API_URL=https://api.kr.kroshhaker.dev/api/v1
           tags: |
             ghcr.io/${{ github.repository }}:${{ steps.vars.outputs.version }}
             ghcr.io/${{ github.repository }}:latest

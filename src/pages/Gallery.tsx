@@ -80,6 +80,7 @@ export default function Gallery() {
                 onNext={next}
                 onPage={(targetPage) => void loadPosts(targetPage)}
                 onTheme={cycleTheme}
+                user={null}
             />
 
             <Show when={loading()}>

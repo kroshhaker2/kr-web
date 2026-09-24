@@ -3,8 +3,8 @@ import type {
     UpdatePostPayload,
     UpdatePostResponse,
 } from "../types/post";
+import { API } from "@/config";
 
-const API = "https://api.kr.kroshhaker.dev/api/v1";
 
 export async function getPosts(
     page: number,
