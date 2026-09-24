@@ -1,3 +1,4 @@
+import { cycleTheme } from "@/stores/theme";
 import UserButton from "./UserButton";
 
 interface Props {
@@ -7,7 +8,6 @@ interface Props {
     onPrev: () => void;
     onNext: () => void;
     onPage: (page: number) => void;
-    onTheme: () => void;
     user: {
         username: string;
     } | null;
@@ -53,11 +53,11 @@ export default function TopBar(props: Props) {
                 Дальше →
             </button>
 
-            <button class="btn" onClick={props.onTheme}>
+            <button class="btn" onClick={cycleTheme}>
                 Тема
             </button>
 
-            <UserButton/>
+            <UserButton />
         </div>
     );
 }

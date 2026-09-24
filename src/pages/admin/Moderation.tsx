@@ -1,215 +1,376 @@
-import { createSignal, onCleanup, onMount, Show } from "solid-js";
+import { createEffect, createSignal, For, Show } from "solid-js";
 
-import Pins from "@/components/Pins";
-import { getPosts, updatePost } from "@/api/posts";
-import type { Post } from "@/types/post";
-import ModSidebar from "@/components/admin/ModSidebar";
-import { deletePost } from "@/api/posts";
+type ModerationImage = {
+    id: string;
+    title: string;
+    description: string | null;
+    storageKey: string;
+    mimeType: string;
+    size: number;
+    createdAt: string;
+
+    user: {
+        id: string;
+        username: string;
+    };
+
+    tags: {
+        id: string;
+        name: string;
+    }[];
+};
 
 export default function Moderation() {
-    const [posts, setPosts] = createSignal<Post[]>([]);
-    const [page, setPage] = createSignal(1);
-    const [loading, setLoading] = createSignal(false);
-    const [selected, setSelected] = createSignal<Set<string>>(new Set());
+    const [images, setImages] = createSignal<ModerationImage[]>([]);
+    const [currentIndex, setCurrentIndex] = createSignal(0);
+
+    const [loading, setLoading] = createSignal(true);
+    const [actionLoading, setActionLoading] = createSignal(false);
     const [error, setError] = createSignal<string | null>(null);
-    const [filterQuery, setFilterQuery] = createSignal("");
-    const [filterDebounce, setFilterDebounce] = createSignal<
-        ReturnType<typeof setTimeout> | undefined
-    >();
 
-    const [theme, setTheme] = createSignal(
-        localStorage.getItem("gallery-theme") || "oled",
-    );
+    const [rejecting, setRejecting] = createSignal(false);
+    const [reason, setReason] = createSignal("");
 
-    function applyTheme(name: string) {
-        document.documentElement.setAttribute("data-theme", name);
-        localStorage.setItem("gallery-theme", name);
-        setTheme(name);
-    }
+    const currentImage = () => images()[currentIndex()];
 
-    function handleFilterChange(query: string): void {
-        setFilterQuery(query);
-
-        const current = filterDebounce();
-
-        if (current) {
-            clearTimeout(current);
-        }
-
-        setFilterDebounce(
-            setTimeout(() => {
-                void loadPosts(1);
-            }, 300),
-        );
-    }
-
-    onCleanup(() => {
-        const current = filterDebounce();
-
-        if (current) {
-            clearTimeout(current);
-        }
-    });
-
-    async function loadPosts(targetPage = page()) {
+    async function loadImages() {
         setLoading(true);
         setError(null);
 
         try {
-            const data = await getPosts(targetPage, 10000, filterQuery());
+            const response = await fetch(
+                "/api/v1/mod/images?status=PENDING",
+                {
+                    credentials: "include",
+                },
+            );
 
-            setPosts(data.content);
-            setPage(targetPage);
+            if (!response.ok) {
+                throw new Error("Не удалось загрузить очередь.");
+            }
+
+            const data = await response.json();
+
+            setImages(data);
+            setCurrentIndex(0);
         } catch (err) {
-            console.error(err);
             setError(
-                "Не удалось загрузить картинки. Проверь, запущен ли сервер.",
+                err instanceof Error
+                    ? err.message
+                    : "Не удалось загрузить очередь.",
             );
         } finally {
             setLoading(false);
         }
     }
 
-    function selectPost(post: Post) {
-        setSelected((current) => {
-            const next = new Set(current);
+    async function moderate(
+        action: "approve" | "reject",
+        rejectReason?: string,
+    ) {
+        const image = currentImage();
 
-            if (next.has(post.id)) {
-                next.delete(post.id);
-            } else {
-                next.add(post.id);
+        if (!image || actionLoading()) return;
+
+        setActionLoading(true);
+        setError(null);
+
+        try {
+            const response = await fetch(
+                `/api/v1/mod/images/${image.id}/${action}`,
+                {
+                    method: "POST",
+                    credentials: "include",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body:
+                        action === "reject"
+                            ? JSON.stringify({
+                                  reason: rejectReason?.trim() || null,
+                              })
+                            : undefined,
+                },
+            );
+
+            if (!response.ok) {
+                const body = await response.json().catch(() => null);
+
+                throw new Error(
+                    body?.message ?? "Не удалось выполнить действие.",
+                );
             }
 
-            return next;
-        });
-    }
+            setRejecting(false);
+            setReason("");
 
-    async function addTagToSelected(tag: string) {
-        const ids = Array.from(selected());
-        let failed = 0;
+            setImages((current) =>
+                current.filter((item) => item.id !== image.id),
+            );
 
-        await Promise.all(
-            ids.map(async (id) => {
-                const post = posts().find((p) => p.id === id);
-                if (!post) return;
-                const nextTags = Array.from(
-                    new Set([...(post.tags ?? []), tag]),
-                );
-
-                try {
-                    await updatePost(id, { tags: nextTags });
-                    setPosts((current) =>
-                        current.map((p) =>
-                            p.id === id ? { ...p, tags: nextTags } : p,
-                        ),
-                    );
-                } catch (err) {
-                    console.error(`Не удалось обновить теги для ${id}:`, err);
-                    failed++;
-                }
-            }),
-        );
-
-        if (failed > 0)
-            setError(`Не удалось обновить ${failed} из ${ids.length} постов.`);
-    }
-
-    async function removeTagFromSelected(tag: string) {
-        const ids = Array.from(selected());
-        let failed = 0;
-
-        await Promise.all(
-            ids.map(async (id) => {
-                const post = posts().find((p) => p.id === id);
-                if (!post) return;
-                const nextTags = (post.tags ?? []).filter((t) => t !== tag);
-
-                try {
-                    await updatePost(id, { tags: nextTags });
-                    setPosts((current) =>
-                        current.map((p) =>
-                            p.id === id ? { ...p, tags: nextTags } : p,
-                        ),
-                    );
-                } catch (err) {
-                    console.error(`Не удалось обновить теги для ${id}:`, err);
-                    failed++;
-                }
-            }),
-        );
-
-        if (failed > 0)
-            setError(`Не удалось обновить ${failed} из ${ids.length} постов.`);
-    }
-
-    async function deleteSelectedPosts() {
-        const ids = Array.from(selected());
-        const deletedIds = new Set<string>();
-
-        await Promise.all(
-            ids.map(async (id) => {
-                try {
-                    await deletePost(id);
-                    deletedIds.add(id);
-                } catch (err) {
-                    console.error(`Не удалось удалить ${id}:`, err);
-                }
-            }),
-        );
-
-        setPosts((current) => current.filter((p) => !deletedIds.has(p.id)));
-        setSelected((current) => {
-            const next = new Set(current);
-            deletedIds.forEach((id) => next.delete(id));
-            return next;
-        });
-
-        if (deletedIds.size < ids.length) {
-            setError(`Удалено ${deletedIds.size} из ${ids.length}.`);
+            if (currentIndex() >= images().length - 1) {
+                setCurrentIndex(Math.max(0, images().length - 2));
+            }
+        } catch (err) {
+            setError(
+                err instanceof Error
+                    ? err.message
+                    : "Не удалось выполнить действие.",
+            );
+        } finally {
+            setActionLoading(false);
         }
     }
 
-    onMount(() => {
-        applyTheme(theme());
-        void loadPosts();
+    function approve() {
+        void moderate("approve");
+    }
+
+    function reject() {
+        if (!reason().trim()) {
+            setError("Укажите причину отклонения.");
+            return;
+        }
+
+        void moderate("reject", reason());
+    }
+
+    function next() {
+        if (currentIndex() < images().length - 1) {
+            setCurrentIndex((index) => index + 1);
+        }
+    }
+
+    function previous() {
+        if (currentIndex() > 0) {
+            setCurrentIndex((index) => index - 1);
+        }
+    }
+
+    function formatSize(bytes: number) {
+        if (bytes < 1024 * 1024) {
+            return `${Math.round(bytes / 1024)} КБ`;
+        }
+
+        return `${(bytes / 1024 / 1024).toFixed(1)} МБ`;
+    }
+
+    createEffect(() => {
+        void loadImages();
     });
 
     return (
-        <div class="moderation-layout">
-            <ModSidebar
-                selectedCount={selected().size}
-                onAddTag={(tag) => void addTagToSelected(tag)}
-                onRemoveTag={(tag) => void removeTagFromSelected(tag)}
-                onDeleteSelected={() => void deleteSelectedPosts()}
-                onFilterChange={handleFilterChange}
-            />
+        <main class="page moderation-page">
+            <div class="moderation-container">
+                <header class="moderation-header">
+                    <div>
+                        <h1>Модерация</h1>
+                        <p>
+                            Изображения, ожидающие проверки.
+                        </p>
+                    </div>
 
-            <main class="moderation-content">
-                <Show when={loading()}>
-                    <div class="status">Загрузка…</div>
-                </Show>
+                    <div class="moderation-counter">
+                        {images().length} ожидает проверки
+                    </div>
+                </header>
 
                 <Show when={error()}>
-                    {(message) => <div class="status error">{message()}</div>}
+                    <div class="form-error">{error()}</div>
                 </Show>
 
                 <Show
-                    when={!loading() && !error() && posts().length > 0}
+                    when={!loading()}
                     fallback={
-                        <Show when={!loading() && !error()}>
-                            <div class="status">
-                                На этой странице ничего нет.
-                            </div>
-                        </Show>
+                        <div class="moderation-empty">
+                            Загрузка очереди...
+                        </div>
                     }
                 >
-                    <Pins
-                        posts={posts()}
-                        selected={selected()}
-                        onSelect={selectPost}
-                    />
+                    <Show
+                        when={currentImage()}
+                        fallback={
+                            <section class="moderation-empty">
+                                <div class="moderation-empty-icon">✓</div>
+
+                                <h2>Очередь пуста</h2>
+
+                                <p>
+                                    Все изображения проверены.
+                                </p>
+
+                                <button
+                                    class="btn btn-secondary"
+                                    onClick={() => void loadImages()}
+                                >
+                                    Обновить
+                                </button>
+                            </section>
+                        }
+                    >
+                        {(image) => (
+                            <section class="moderation-card">
+                                <div class="moderation-image">
+                                    <img
+                                        src={`/api/v1/images/${image().id}/file`}
+                                        alt={image().title}
+                                    />
+                                </div>
+
+                                <aside class="moderation-info">
+                                    <div class="moderation-position">
+                                        {currentIndex() + 1} / {images().length}
+                                    </div>
+
+                                    <h2>{image().title}</h2>
+
+                                    <div class="moderation-author">
+                                        Автор:
+                                        <strong>
+                                            {image().user.username}
+                                        </strong>
+                                    </div>
+
+                                    <Show when={image().description}>
+                                        <p class="moderation-description">
+                                            {image().description}
+                                        </p>
+                                    </Show>
+
+                                    <div class="moderation-meta">
+                                        <span>
+                                            {image().mimeType}
+                                        </span>
+
+                                        <span>
+                                            {formatSize(image().size)}
+                                        </span>
+                                    </div>
+
+                                    <Show when={image().tags.length}>
+                                        <div class="moderation-tags">
+                                            <For each={image().tags}>
+                                                {(tag) => (
+                                                    <span class="tag">
+                                                        #{tag.name}
+                                                    </span>
+                                                )}
+                                            </For>
+                                        </div>
+                                    </Show>
+
+                                    <Show
+                                        when={!rejecting()}
+                                        fallback={
+                                            <div class="reject-form">
+                                                <label>
+                                                    <span>
+                                                        Причина отклонения
+                                                    </span>
+
+                                                    <textarea
+                                                        class="input textarea"
+                                                        value={reason()}
+                                                        onInput={(event) =>
+                                                            setReason(
+                                                                event
+                                                                    .currentTarget
+                                                                    .value,
+                                                            )
+                                                        }
+                                                        placeholder="Укажите причину..."
+                                                        maxlength={500}
+                                                    />
+                                                </label>
+
+                                                <div class="moderation-actions">
+                                                    <button
+                                                        class="btn"
+                                                        disabled={
+                                                            actionLoading()
+                                                        }
+                                                        onClick={reject}
+                                                    >
+                                                        {actionLoading()
+                                                            ? "Отклонение..."
+                                                            : "Отклонить"}
+                                                    </button>
+
+                                                    <button
+                                                        class="btn btn-secondary"
+                                                        disabled={
+                                                            actionLoading()
+                                                        }
+                                                        onClick={() => {
+                                                            setRejecting(
+                                                                false,
+                                                            );
+                                                            setReason("");
+                                                        }}
+                                                    >
+                                                        Отмена
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        }
+                                    >
+                                        <div class="moderation-actions">
+                                            <button
+                                                class="btn btn-danger"
+                                                disabled={
+                                                    actionLoading()
+                                                }
+                                                onClick={() =>
+                                                    setRejecting(true)
+                                                }
+                                            >
+                                                Отклонить
+                                            </button>
+
+                                            <button
+                                                class="btn btn-approve"
+                                                disabled={
+                                                    actionLoading()
+                                                }
+                                                onClick={approve}
+                                            >
+                                                {actionLoading()
+                                                    ? "..."
+                                                    : "Одобрить"}
+                                            </button>
+                                        </div>
+                                    </Show>
+
+                                    <div class="moderation-navigation">
+                                        <button
+                                            class="btn btn-secondary"
+                                            disabled={
+                                                currentIndex() === 0 ||
+                                                actionLoading()
+                                            }
+                                            onClick={previous}
+                                        >
+                                            ←
+                                        </button>
+
+                                        <button
+                                            class="btn btn-secondary"
+                                            disabled={
+                                                currentIndex() >=
+                                                    images().length - 1 ||
+                                                actionLoading()
+                                            }
+                                            onClick={next}
+                                        >
+                                            →
+                                        </button>
+                                    </div>
+                                </aside>
+                            </section>
+                        )}
+                    </Show>
                 </Show>
-            </main>
-        </div>
+            </div>
+        </main>
     );
 }

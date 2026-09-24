@@ -5,32 +5,12 @@ import Pins from "@/components/Pins";
 import { getPosts } from "@/api/posts";
 import type { Post } from "@/types/post";
 
-const THEMES = ["amber", "oled", "light", "dark", "cappuccino"];
-
 export default function Gallery() {
     const [posts, setPosts] = createSignal<Post[]>([]);
     const [page, setPage] = createSignal(1);
     const [totalPages, setTotalPages] = createSignal(1);
     const [loading, setLoading] = createSignal(false);
     const [error, setError] = createSignal<string | null>(null);
-
-    const [theme, setTheme] = createSignal(
-        localStorage.getItem("gallery-theme") || "oled",
-    );
-
-    function applyTheme(name: string): void {
-        document.documentElement.setAttribute("data-theme", name);
-        localStorage.setItem("gallery-theme", name);
-        setTheme(name);
-    }
-
-    function cycleTheme() {
-        const current = theme();
-        const index = THEMES.indexOf(current);
-        const next = THEMES[(index + 1) % THEMES.length];
-
-        applyTheme(next);
-    }
 
     async function loadPosts(targetPage = page()) {
         setLoading(true);
@@ -66,7 +46,6 @@ export default function Gallery() {
     }
 
     onMount(() => {
-        applyTheme(theme());
         void loadPosts();
     });
 
@@ -79,7 +58,6 @@ export default function Gallery() {
                 onPrev={prev}
                 onNext={next}
                 onPage={(targetPage) => void loadPosts(targetPage)}
-                onTheme={cycleTheme}
                 user={null}
             />
 
