@@ -1,8 +1,11 @@
+export type Rating = "SAFE" | "QUESTIONABLE" | "EXPLICIT";
+
 export interface Post {
     id: string;
     file: string;
     preview: string;
     tags: string[];
+    rating: Rating;
     liked: boolean;
 }
 

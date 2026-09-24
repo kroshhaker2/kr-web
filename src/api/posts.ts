@@ -18,7 +18,7 @@ export async function getPosts(
 
     const tokens = filterQuery.trim().split(/\s+/).filter(Boolean);
     if (tokens.length > 0) {
-        params.set("tags", tokens.join(" "));
+        params.set("tags", tokens.join("+"));
     }
 
     const response = await fetch(`${API}/posts?${params.toString()}`);
