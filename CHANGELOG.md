@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.1](https://github.com/kroshhaker2/kr-web/compare/v1.2.0...v1.2.1) (2026-09-24)
+
+
+### Bug Fixes
+
+* **api:** Fix posts api lint errors ([5b3903e](https://github.com/kroshhaker2/kr-web/commit/5b3903ec8f8b7fc5b929928d9a94c7336451ce58))
+
 ## [1.2.0](https://github.com/kroshhaker2/kr-web/compare/v1.1.1...v1.2.0) (2026-09-24)
 
 
