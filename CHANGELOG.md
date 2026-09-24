@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/kroshhaker2/kr-web/compare/v1.1.0...v1.1.1) (2026-09-24)
+
+
+### Bug Fixes
+
+* **config:** Fix env api_url ([3335918](https://github.com/kroshhaker2/kr-web/commit/3335918168f23063684870aed07045be2f833bec))
+
 ## [1.1.0](https://github.com/kroshhaker2/kr-web/compare/v1.0.2...v1.1.0) (2026-09-24)
 
 
