@@ -1,6 +1,6 @@
 import { createSignal, Show } from "solid-js";
 import { useNavigate } from "@solidjs/router";
-import { API } from "@/config";
+import { createPost } from "@/api/posts";
 import type { Rating } from "@/types/post";
 
 export default function Upload() {
@@ -143,34 +143,18 @@ export default function Upload() {
         setError(null);
 
         try {
-            const formData = new FormData();
-
             const parsedTags = tags()
                 .split(",")
                 .map((tag) => tag.trim())
                 .filter(Boolean);
 
-            formData.append("metadata", JSON.stringify({
+            await createPost({
+                file: currentFile,
                 title: title().trim(),
                 description: description().trim(),
                 tags: parsedTags,
                 rating: rating(),
-            }));
-            formData.append("file", currentFile);
-
-            const response = await fetch(`${API}/posts`, {
-                method: "POST",
-                credentials: "include",
-                body: formData,
             });
-
-            if (!response.ok) {
-                const body = await response.json().catch(() => null);
-
-                throw new Error(
-                    body?.message ?? "Не удалось отправить изображение.",
-                );
-            }
 
             setSubmitted(true);
         } catch (err) {
@@ -385,7 +369,7 @@ export default function Upload() {
                         <button
                             class="btn upload-submit"
                             disabled={loading() || !file()}
-                            onClick={submit}
+                            onClick={() => void submit()}
                         >
                             {loading()
                                 ? "Отправка..."

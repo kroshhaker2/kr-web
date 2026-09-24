@@ -1,24 +1,31 @@
 import { createEffect, createSignal, For, Show } from "solid-js";
+import { z } from "zod";
 
-type ModerationImage = {
-    id: string;
-    title: string;
-    description: string | null;
-    storageKey: string;
-    mimeType: string;
-    size: number;
-    createdAt: string;
+const ModerationImageSchema = z.object({
+    id: z.string(),
+    title: z.string(),
+    description: z.string().nullable(),
+    storageKey: z.string(),
+    mimeType: z.string(),
+    size: z.number(),
+    createdAt: z.string(),
+    user: z.object({
+        id: z.string(),
+        username: z.string(),
+    }),
+    tags: z.array(
+        z.object({
+            id: z.string(),
+            name: z.string(),
+        }),
+    ),
+});
 
-    user: {
-        id: string;
-        username: string;
-    };
+const ErrorResponseSchema = z.object({
+    message: z.string(),
+});
 
-    tags: {
-        id: string;
-        name: string;
-    }[];
-};
+type ModerationImage = z.infer<typeof ModerationImageSchema>;
 
 export default function Moderation() {
     const [images, setImages] = createSignal<ModerationImage[]>([]);
@@ -49,9 +56,9 @@ export default function Moderation() {
                 throw new Error("Не удалось загрузить очередь.");
             }
 
-            const data = await response.json();
+            const data: unknown = await response.json();
 
-            setImages(data);
+            setImages(z.array(ModerationImageSchema).parse(data));
             setCurrentIndex(0);
         } catch (err) {
             setError(
@@ -94,10 +101,13 @@ export default function Moderation() {
             );
 
             if (!response.ok) {
-                const body = await response.json().catch(() => null);
+                const body: unknown = await response.json().catch(() => null);
+                const parsedBody = ErrorResponseSchema.safeParse(body);
 
                 throw new Error(
-                    body?.message ?? "Не удалось выполнить действие.",
+                    parsedBody.success
+                        ? parsedBody.data.message
+                        : "Не удалось выполнить действие.",
                 );
             }
 

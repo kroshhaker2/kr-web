@@ -1,10 +1,60 @@
 import type {
     PostsResponse,
+    Rating,
     UpdatePostPayload,
     UpdatePostResponse,
 } from "../types/post";
 import { API } from "@/config";
 
+interface CreatePostPayload {
+    file: File;
+    title: string;
+    description: string;
+    tags: string[];
+    rating: Rating;
+}
+
+function getErrorMessage(value: unknown): string | undefined {
+    if (
+        typeof value !== "object" ||
+        value === null ||
+        !("message" in value) ||
+        typeof value.message !== "string"
+    ) {
+        return undefined;
+    }
+
+    return value.message;
+}
+
+export async function createPost(payload: CreatePostPayload): Promise<void> {
+    const formData = new FormData();
+
+    formData.append(
+        "metadata",
+        JSON.stringify({
+            title: payload.title,
+            description: payload.description,
+            tags: payload.tags,
+            rating: payload.rating,
+        }),
+    );
+    formData.append("file", payload.file);
+
+    const response = await fetch(`${API}/posts`, {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+    });
+
+    if (!response.ok) {
+        const body: unknown = await response.json().catch(() => null);
+
+        throw new Error(
+            getErrorMessage(body) ?? "Не удалось отправить изображение.",
+        );
+    }
+}
 
 export async function getPosts(
     page: number,
