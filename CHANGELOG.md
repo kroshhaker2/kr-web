@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.1.0](https://github.com/kroshhaker2/kr-web/compare/v1.0.2...v1.1.0) (2026-09-24)
+
+
+### Features
+
+* **auth:** Add login & register pages ([d376927](https://github.com/kroshhaker2/kr-web/commit/d376927a41f2fa5d3e4f9033b8daf87ae6edbabd))
+
+
+### Bug Fixes
+
+* **admin:** Fix admin layout ([ded10a5](https://github.com/kroshhaker2/kr-web/commit/ded10a5878551a953767a4eed0a068c61b8ef53a))
+
 ## [1.0.2](https://github.com/kroshhaker2/kr-web/compare/v1.0.1...v1.0.2) (2026-09-13)
 
 
