@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.0](https://github.com/kroshhaker2/kr-web/compare/v1.1.1...v1.2.0) (2026-09-24)
+
+
+### Features
+
+* add post rating and fix tag filter encoding ([02ed883](https://github.com/kroshhaker2/kr-web/commit/02ed883c9924e29e3c3d98809e87f7afa63573a6))
+* update moderation UI and centralize theme management ([4e86b88](https://github.com/kroshhaker2/kr-web/commit/4e86b88415fac5a8d90bda630be0be9093007564))
+
 ## [1.1.1](https://github.com/kroshhaker2/kr-web/compare/v1.1.0...v1.1.1) (2026-09-24)
 
 
