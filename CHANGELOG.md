@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.0](https://github.com/kroshhaker2/kr-web/compare/v1.3.0...v1.4.0) (2026-09-26)
+
+
+### Features
+
+* Add localization (ru, en) ([d695817](https://github.com/kroshhaker2/kr-web/commit/d695817ec81c48f7dcf143feba4a5acedc02ed30))
+
 ## [1.3.0](https://github.com/kroshhaker2/kr-web/compare/v1.2.1...v1.3.0) (2026-09-26)
 
 
