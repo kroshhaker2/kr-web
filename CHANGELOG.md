@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.5.0](https://github.com/kroshhaker2/kr-web/compare/v1.4.0...v1.5.0) (2026-09-26)
+
+
+### Features
+
+* Show validation errors ([346d20c](https://github.com/kroshhaker2/kr-web/commit/346d20c03688c062d6f6a371b43467d69b2516cf))
+
+
+### Bug Fixes
+
+* Author renamed to Uploader ([6ea3158](https://github.com/kroshhaker2/kr-web/commit/6ea31586263c4590ae39b9ec0d5aa55e989db2e0))
+
 ## [1.4.0](https://github.com/kroshhaker2/kr-web/compare/v1.3.0...v1.4.0) (2026-09-26)
 
 
