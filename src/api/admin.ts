@@ -4,6 +4,9 @@ import {
     type ModerationCommand,
     type ModerationPost,
     type ModerationPostChanges,
+    AdminTagsResponseSchema,
+    type AdminTag,
+    type TagInput,
 } from "@/types/admin";
 import { throwApiError } from "./errors";
 
@@ -60,5 +63,58 @@ export async function moderatePost(
 
     if (!response.ok) {
         await throwApiError(response, "errors.moderationActionFailed");
+    }
+}
+
+export async function getAdminTags(): Promise<AdminTag[]> {
+    const response = await fetch(`${API}/admin/tags`, {
+        credentials: "include",
+    });
+
+    if (!response.ok) {
+        await throwApiError(response, "errors.tagsLoadFailed");
+    }
+
+    const data: unknown = await response.json();
+    return AdminTagsResponseSchema.parse(data);
+}
+
+export async function createAdminTag(tag: TagInput): Promise<void> {
+    const response = await fetch(`${API}/admin/tags`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(tag),
+    });
+
+    if (!response.ok) {
+        await throwApiError(response, "errors.tagCreateFailed");
+    }
+}
+
+export async function updateAdminTag(
+    id: number,
+    tag: TagInput,
+): Promise<void> {
+    const response = await fetch(`${API}/admin/tags/${id}`, {
+        method: "PUT",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(tag),
+    });
+
+    if (!response.ok) {
+        await throwApiError(response, "errors.tagUpdateFailed");
+    }
+}
+
+export async function deleteAdminTag(id: number): Promise<void> {
+    const response = await fetch(`${API}/admin/tags/${id}`, {
+        method: "DELETE",
+        credentials: "include",
+    });
+
+    if (!response.ok) {
+        await throwApiError(response, "errors.tagDeleteFailed");
     }
 }
