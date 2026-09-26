@@ -1,35 +1,22 @@
-import { createEffect, createSignal, For, Show } from "solid-js";
-import { z } from "zod";
+import { createEffect, createSignal, Show } from "solid-js";
+import { getPendingModerationPost, moderatePost } from "@/api/admin";
+import type {
+    ModerationCommand,
+    ModerationPost,
+    ModerationPostChanges,
+} from "@/types/admin";
 
-const ModerationImageSchema = z.object({
-    id: z.string(),
-    title: z.string(),
-    description: z.string().nullable(),
-    storageKey: z.string(),
-    mimeType: z.string(),
-    size: z.number(),
-    createdAt: z.string(),
-    user: z.object({
-        id: z.string(),
-        username: z.string(),
-    }),
-    tags: z.array(
-        z.object({
-            id: z.string(),
-            name: z.string(),
-        }),
-    ),
-});
-
-const ErrorResponseSchema = z.object({
-    message: z.string(),
-});
-
-type ModerationImage = z.infer<typeof ModerationImageSchema>;
+const EMPTY_CHANGES: ModerationPostChanges = {
+    title: null,
+    description: null,
+    rating: "SAFE",
+    tags: [],
+    suggestedTags: null,
+    sourceUrl: null,
+};
 
 export default function Moderation() {
-    const [images, setImages] = createSignal<ModerationImage[]>([]);
-    const [currentIndex, setCurrentIndex] = createSignal(0);
+    const [post, setPost] = createSignal<ModerationPost | null>(null);
 
     const [loading, setLoading] = createSignal(true);
     const [actionLoading, setActionLoading] = createSignal(false);
@@ -37,29 +24,43 @@ export default function Moderation() {
 
     const [rejecting, setRejecting] = createSignal(false);
     const [reason, setReason] = createSignal("");
+    const [tagsInput, setTagsInput] = createSignal("");
+    const [changes, setChanges] =
+        createSignal<ModerationPostChanges>(EMPTY_CHANGES);
 
-    const currentImage = () => images()[currentIndex()];
+    const hasSuggestedTags = () => Boolean(changes().suggestedTags?.trim());
 
-    async function loadImages() {
+    function updateField<K extends keyof ModerationPostChanges>(
+        field: K,
+        value: ModerationPostChanges[K],
+    ) {
+        setChanges((current) => ({ ...current, [field]: value }));
+    }
+
+    async function loadPost() {
         setLoading(true);
         setError(null);
 
         try {
-            const response = await fetch(
-                "/api/v1/mod/images?status=PENDING",
-                {
-                    credentials: "include",
-                },
-            );
+            const loadedPost = await getPendingModerationPost();
 
-            if (!response.ok) {
-                throw new Error("Не удалось загрузить очередь.");
+            setPost(loadedPost);
+
+            if (!loadedPost) {
+                setTagsInput("");
+                setChanges(EMPTY_CHANGES);
+                return;
             }
 
-            const data: unknown = await response.json();
-
-            setImages(z.array(ModerationImageSchema).parse(data));
-            setCurrentIndex(0);
+            setTagsInput(loadedPost.tags.map((tag) => tag.name).join(", "));
+            setChanges({
+                title: loadedPost.title,
+                description: loadedPost.description,
+                rating: loadedPost.rating,
+                tags: loadedPost.tags.map((tag) => tag.name),
+                suggestedTags: loadedPost.suggestedTags,
+                sourceUrl: loadedPost.sourceUrl,
+            });
         } catch (err) {
             setError(
                 err instanceof Error
@@ -71,56 +72,29 @@ export default function Moderation() {
         }
     }
 
-    async function moderate(
-        action: "approve" | "reject",
-        rejectReason?: string,
-    ) {
-        const image = currentImage();
+    async function moderate(command: ModerationCommand) {
+        const currentPost = post();
 
-        if (!image || actionLoading()) return;
+        if (!currentPost || actionLoading()) return;
 
         setActionLoading(true);
         setError(null);
 
         try {
-            const response = await fetch(
-                `/api/v1/mod/images/${image.id}/${action}`,
-                {
-                    method: "POST",
-                    credentials: "include",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body:
-                        action === "reject"
-                            ? JSON.stringify({
-                                  reason: rejectReason?.trim() || null,
-                              })
-                            : undefined,
-                },
+            await moderatePost(
+                currentPost.id,
+                changes(),
+                command,
             );
-
-            if (!response.ok) {
-                const body: unknown = await response.json().catch(() => null);
-                const parsedBody = ErrorResponseSchema.safeParse(body);
-
-                throw new Error(
-                    parsedBody.success
-                        ? parsedBody.data.message
-                        : "Не удалось выполнить действие.",
-                );
-            }
 
             setRejecting(false);
             setReason("");
 
-            setImages((current) =>
-                current.filter((item) => item.id !== image.id),
-            );
+            setPost(null);
+            setTagsInput("");
+            setChanges(EMPTY_CHANGES);
 
-            if (currentIndex() >= images().length - 1) {
-                setCurrentIndex(Math.max(0, images().length - 2));
-            }
+            await loadPost();
         } catch (err) {
             setError(
                 err instanceof Error
@@ -133,7 +107,12 @@ export default function Moderation() {
     }
 
     function approve() {
-        void moderate("approve");
+        if (hasSuggestedTags()) {
+            setError("Обработайте предложенные теги перед одобрением.");
+            return;
+        }
+
+        void moderate({ type: "APPROVE" });
     }
 
     function reject() {
@@ -142,19 +121,7 @@ export default function Moderation() {
             return;
         }
 
-        void moderate("reject", reason());
-    }
-
-    function next() {
-        if (currentIndex() < images().length - 1) {
-            setCurrentIndex((index) => index + 1);
-        }
-    }
-
-    function previous() {
-        if (currentIndex() > 0) {
-            setCurrentIndex((index) => index - 1);
-        }
+        void moderate({ type: "REJECT", reason: reason().trim() });
     }
 
     function formatSize(bytes: number) {
@@ -165,8 +132,21 @@ export default function Moderation() {
         return `${(bytes / 1024 / 1024).toFixed(1)} МБ`;
     }
 
+    function formatDate(value: string | null) {
+        if (!value) return "—";
+
+        const date = new Date(value);
+
+        if (Number.isNaN(date.getTime())) return value;
+
+        return new Intl.DateTimeFormat("ru-RU", {
+            dateStyle: "medium",
+            timeStyle: "short",
+        }).format(date);
+    }
+
     createEffect(() => {
-        void loadImages();
+        void loadPost();
     });
 
     return (
@@ -176,12 +156,12 @@ export default function Moderation() {
                     <div>
                         <h1>Модерация</h1>
                         <p>
-                            Изображения, ожидающие проверки.
+                            Посты, ожидающие проверки.
                         </p>
                     </div>
 
                     <div class="moderation-counter">
-                        {images().length} ожидает проверки
+                        {post()?.count ?? 0} ожидает проверки
                     </div>
                 </header>
 
@@ -198,7 +178,7 @@ export default function Moderation() {
                     }
                 >
                     <Show
-                        when={currentImage()}
+                        when={post()}
                         fallback={
                             <section class="moderation-empty">
                                 <div class="moderation-empty-icon">✓</div>
@@ -206,68 +186,223 @@ export default function Moderation() {
                                 <h2>Очередь пуста</h2>
 
                                 <p>
-                                    Все изображения проверены.
+                                    Все посты проверены.
                                 </p>
 
                                 <button
                                     class="btn btn-secondary"
-                                    onClick={() => void loadImages()}
+                                    onClick={() => void loadPost()}
                                 >
                                     Обновить
                                 </button>
                             </section>
                         }
                     >
-                        {(image) => (
+                        {(post) => (
                             <section class="moderation-card">
-                                <div class="moderation-image">
+                                <div class="moderation-post">
                                     <img
-                                        src={`/api/v1/images/${image().id}/file`}
-                                        alt={image().title}
+                                        src={post().preview}
+                                        alt={post().title ?? ""}
                                     />
                                 </div>
 
                                 <aside class="moderation-info">
-                                    <div class="moderation-position">
-                                        {currentIndex() + 1} / {images().length}
-                                    </div>
-
-                                    <h2>{image().title}</h2>
-
-                                    <div class="moderation-author">
-                                        Автор:
-                                        <strong>
-                                            {image().user.username}
-                                        </strong>
-                                    </div>
-
-                                    <Show when={image().description}>
-                                        <p class="moderation-description">
-                                            {image().description}
-                                        </p>
-                                    </Show>
-
-                                    <div class="moderation-meta">
-                                        <span>
-                                            {image().mimeType}
-                                        </span>
-
-                                        <span>
-                                            {formatSize(image().size)}
-                                        </span>
-                                    </div>
-
-                                    <Show when={image().tags.length}>
-                                        <div class="moderation-tags">
-                                            <For each={image().tags}>
-                                                {(tag) => (
-                                                    <span class="tag">
-                                                        #{tag.name}
-                                                    </span>
-                                                )}
-                                            </For>
+                                    <dl class="moderation-details">
+                                        <div>
+                                            <dt>Автор</dt>
+                                            <dd>
+                                                {post().uploadedBy?.username ??
+                                                    "Неизвестен"}
+                                            </dd>
                                         </div>
-                                    </Show>
+                                        <div>
+                                            <dt>Статус</dt>
+                                            <dd>{post().status}</dd>
+                                        </div>
+                                        <div>
+                                            <dt>Загружен</dt>
+                                            <dd>
+                                                {formatDate(post().createdAt)}
+                                            </dd>
+                                        </div>
+                                        <div>
+                                            <dt>Проверен</dt>
+                                            <dd>
+                                                {formatDate(post().moderatedAt)}
+                                            </dd>
+                                        </div>
+                                        <Show when={post().deletedAt}>
+                                            <div>
+                                                <dt>Удалён</dt>
+                                                <dd>
+                                                    {formatDate(
+                                                        post().deletedAt,
+                                                    )}
+                                                </dd>
+                                            </div>
+                                        </Show>
+                                        <div>
+                                            <dt>Файл</dt>
+                                            <dd>{post().originalFilename}</dd>
+                                        </div>
+                                        <div>
+                                            <dt>Тип и размер</dt>
+                                            <dd>
+                                                {post().mimeType} ·{" "}
+                                                {formatSize(post().size)}
+                                            </dd>
+                                        </div>
+                                        <div>
+                                            <dt>Статистика</dt>
+                                            <dd>
+                                                {post().views} просмотров ·{" "}
+                                                {post().favorites} в избранном
+                                            </dd>
+                                        </div>
+                                        <div class="moderation-detail-id">
+                                            <dt>ID</dt>
+                                            <dd>{post().id}</dd>
+                                        </div>
+                                    </dl>
+
+                                    <div class="moderation-fields">
+                                        <label>
+                                            <span>Название</span>
+                                            <input
+                                                class="input"
+                                                maxlength={120}
+                                                value={changes().title ?? ""}
+                                                onInput={(event) =>
+                                                    updateField(
+                                                        "title",
+                                                        event.currentTarget
+                                                            .value || null,
+                                                    )
+                                                }
+                                            />
+                                        </label>
+
+                                        <label>
+                                            <span>Описание</span>
+                                            <textarea
+                                                class="input textarea"
+                                                maxlength={1000}
+                                                value={
+                                                    changes().description ?? ""
+                                                }
+                                                onInput={(event) =>
+                                                    updateField(
+                                                        "description",
+                                                        event.currentTarget
+                                                            .value || null,
+                                                    )
+                                                }
+                                            />
+                                        </label>
+
+                                        <label>
+                                            <span>Рейтинг</span>
+                                            <select
+                                                class="input rating-select"
+                                                classList={{
+                                                    "rating-safe":
+                                                        changes().rating ===
+                                                        "SAFE",
+                                                    "rating-questionable":
+                                                        changes().rating ===
+                                                        "QUESTIONABLE",
+                                                    "rating-explicit":
+                                                        changes().rating ===
+                                                        "EXPLICIT",
+                                                }}
+                                                value={changes().rating}
+                                                onChange={(event) =>
+                                                    updateField(
+                                                        "rating",
+                                                        event.currentTarget
+                                                            .value as ModerationPostChanges["rating"],
+                                                    )
+                                                }
+                                            >
+                                                <option value="SAFE">SAFE</option>
+                                                <option value="QUESTIONABLE">
+                                                    QUESTIONABLE
+                                                </option>
+                                                <option value="EXPLICIT">
+                                                    EXPLICIT
+                                                </option>
+                                            </select>
+                                        </label>
+
+                                        <label>
+                                            <span>Теги</span>
+                                            <input
+                                                class="input"
+                                                value={tagsInput()}
+                                                onInput={(event) => {
+                                                    setTagsInput(
+                                                        event.currentTarget
+                                                            .value,
+                                                    );
+                                                    updateField(
+                                                        "tags",
+                                                        event.currentTarget.value
+                                                            .split(",")
+                                                            .map((tag) =>
+                                                                tag.trim(),
+                                                            )
+                                                            .filter(Boolean),
+                                                    );
+                                                }}
+                                                placeholder="nature, city, night"
+                                            />
+                                            <small class="input-hint">
+                                                Разделяйте теги запятыми.
+                                            </small>
+                                        </label>
+
+                                        <label>
+                                            <span>Предложенные теги</span>
+                                            <input
+                                                class="input"
+                                                value={
+                                                    changes().suggestedTags ?? ""
+                                                }
+                                                onInput={(event) =>
+                                                    updateField(
+                                                        "suggestedTags",
+                                                        event.currentTarget
+                                                            .value || null,
+                                                    )
+                                                }
+                                            />
+                                            <Show when={hasSuggestedTags()}>
+                                                <small class="input-hint form-error">
+                                                    Очистите поле перед одобрением.
+                                                </small>
+                                            </Show>
+                                        </label>
+
+                                        <label>
+                                            <span>Источник</span>
+                                            <input
+                                                class="input"
+                                                type="url"
+                                                maxlength={200}
+                                                value={
+                                                    changes().sourceUrl ?? ""
+                                                }
+                                                onInput={(event) =>
+                                                    updateField(
+                                                        "sourceUrl",
+                                                        event.currentTarget
+                                                            .value || null,
+                                                    )
+                                                }
+                                            />
+                                        </label>
+                                    </div>
 
                                     <Show
                                         when={!rejecting()}
@@ -289,7 +424,7 @@ export default function Moderation() {
                                                             )
                                                         }
                                                         placeholder="Укажите причину..."
-                                                        maxlength={500}
+                                                        maxlength={1000}
                                                     />
                                                 </label>
 
@@ -327,9 +462,7 @@ export default function Moderation() {
                                         <div class="moderation-actions">
                                             <button
                                                 class="btn btn-danger"
-                                                disabled={
-                                                    actionLoading()
-                                                }
+                                                disabled={actionLoading()}
                                                 onClick={() =>
                                                     setRejecting(true)
                                                 }
@@ -340,7 +473,8 @@ export default function Moderation() {
                                             <button
                                                 class="btn btn-approve"
                                                 disabled={
-                                                    actionLoading()
+                                                    actionLoading() ||
+                                                    hasSuggestedTags()
                                                 }
                                                 onClick={approve}
                                             >
@@ -351,30 +485,6 @@ export default function Moderation() {
                                         </div>
                                     </Show>
 
-                                    <div class="moderation-navigation">
-                                        <button
-                                            class="btn btn-secondary"
-                                            disabled={
-                                                currentIndex() === 0 ||
-                                                actionLoading()
-                                            }
-                                            onClick={previous}
-                                        >
-                                            ←
-                                        </button>
-
-                                        <button
-                                            class="btn btn-secondary"
-                                            disabled={
-                                                currentIndex() >=
-                                                    images().length - 1 ||
-                                                actionLoading()
-                                            }
-                                            onClick={next}
-                                        >
-                                            →
-                                        </button>
-                                    </div>
                                 </aside>
                             </section>
                         )}

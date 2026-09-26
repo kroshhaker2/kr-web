@@ -41,7 +41,7 @@ export async function login(
     });
 
     if (!response.ok) {
-        throw new Error("Неверное имя пользователя или пароль");
+        throw new Error("Неверный email или пароль");
     }
 }
 
