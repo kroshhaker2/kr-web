@@ -1,15 +1,16 @@
 import { login } from "@/api/auth";
 import { useNavigate } from "@solidjs/router";
 import { createSignal } from "solid-js";
-import { useI18n, type TranslationKey } from "@/i18n/context";
+import { useI18n } from "@/i18n/context";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import ErrorList from "@/components/ErrorList";
 
 export default function Login() {
-    const { t, errorKey } = useI18n();
+    const { t } = useI18n();
     const [email, setEmail] = createSignal("");
     const [password, setPassword] = createSignal("");
     const [loading, setLoading] = createSignal(false);
-    const [error, setError] = createSignal<TranslationKey | null>(null);
+    const [error, setError] = createSignal<Error | null>(null);
 
     const navigate = useNavigate();
 
@@ -19,7 +20,7 @@ export default function Login() {
         setError(null);
 
         if (!email() || !password()) {
-            setError("errors.requiredFields");
+            setError(new Error("errors.requiredFields"));
             return;
         }
 
@@ -30,7 +31,9 @@ export default function Login() {
 
             navigate("/");
         } catch (err) {
-            setError(errorKey(err, "errors.loginFailed"));
+            setError(
+                err instanceof Error ? err : new Error("errors.loginFailed"),
+            );
         } finally {
             setLoading(false);
         }
@@ -81,7 +84,11 @@ export default function Login() {
                         />
                     </label>
 
-                    {error() && <div class="auth-error">{t(error()!)}</div>}
+                    <ErrorList
+                        class="auth-error error-list"
+                        error={error()}
+                        fallback="errors.loginFailed"
+                    />
 
                     <button
                         class="btn auth-submit"

@@ -10,6 +10,7 @@ import {
 } from "solid-js";
 import { en } from "./dictionaries/en";
 import { ru } from "./dictionaries/ru";
+import { ApiError, type ValidationDetail } from "@/api/errors";
 
 export const LOCALES = ["ru", "en"] as const;
 export type Locale = (typeof LOCALES)[number];
@@ -37,6 +38,7 @@ interface I18nContextValue {
     formatNumber: (value: number) => string;
     formatFileSize: (bytes: number, fractionDigits?: number) => string;
     errorKey: (error: unknown, fallback: TranslationKey) => TranslationKey;
+    errorMessages: (error: Error, fallback: TranslationKey) => string[];
 }
 
 const I18nContext = createContext<I18nContextValue>();
@@ -117,6 +119,75 @@ export function I18nProvider(props: ParentProps) {
         return fallback;
     };
 
+    const apiErrorKeys: Partial<Record<string, TranslationKey>> = {
+        INVALID_CREDENTIALS: "errors.invalidCredentials",
+        UNAUTHORIZED: "errors.unauthorized",
+        EMAIL_ALREADY_EXISTS: "errors.emailAlreadyExists",
+        USERNAME_ALREADY_EXISTS: "errors.usernameAlreadyExists",
+        PASSWORD_TOO_WEAK: "errors.passwordTooWeak",
+        PASSWORD_COMPROMISED: "errors.passwordCompromised",
+        PASSWORD_TOO_SHORT: "errors.passwordTooShort",
+        PASSWORD_TOO_LONG: "errors.passwordTooLong",
+        USERNAME_TOO_SHORT: "errors.usernameTooShort",
+        USERNAME_TOO_LONG: "errors.usernameTooLong",
+        USERNAME_INVALID_CHARACTERS: "errors.usernameInvalidCharacters",
+        INVALID_EMAIL: "errors.invalidEmail",
+        INVALID_USERNAME: "errors.invalidUsername",
+        FILE_REQUIRED: "errors.fileRequired",
+        UNSUPPORTED_FILE_TYPE: "errors.uploadType",
+    };
+
+    const validationFieldKeys: Partial<Record<string, TranslationKey>> = {
+        email: "errors.validationFields.email",
+        username: "errors.validationFields.username",
+        password: "errors.validationFields.password",
+        title: "errors.validationFields.title",
+        description: "errors.validationFields.description",
+        tags: "errors.validationFields.tags",
+        rating: "errors.validationFields.rating",
+        sourceUrl: "errors.validationFields.sourceUrl",
+        suggestedTags: "errors.validationFields.suggestedTags",
+        status: "errors.validationFields.status",
+        reason: "errors.validationFields.reason",
+        file: "errors.validationFields.file",
+    };
+
+    const validationMessage = (detail: ValidationDetail): string => {
+        const messageKey = apiErrorKeys[detail.message];
+        if (messageKey) return t(messageKey);
+
+        const pathSegments = detail.path.split(".");
+        const fieldName = [...pathSegments]
+            .reverse()
+            .find((segment) => segment in validationFieldKeys);
+
+        if (fieldName === "email") return t("errors.invalidEmail");
+        if (fieldName === "username") return t("errors.invalidUsername");
+        if (fieldName === "password") return t("errors.invalidPassword");
+
+        const fieldKey = fieldName
+            ? validationFieldKeys[fieldName]
+            : undefined;
+        const field = fieldKey ? t(fieldKey) : detail.path || detail.code;
+        return t("errors.invalidField", { field });
+    };
+
+    const errorMessages = (
+        error: Error,
+        fallback: TranslationKey,
+    ): string[] => {
+        if (error instanceof ApiError) {
+            if (error.code === "VALIDATION_ERROR" && error.details.length > 0) {
+                return error.details.map(validationMessage);
+            }
+
+            const apiErrorKey = apiErrorKeys[error.code];
+            if (apiErrorKey) return [t(apiErrorKey)];
+        }
+
+        return [t(errorKey(error, fallback))];
+    };
+
     createEffect(() => {
         document.documentElement.setAttribute("lang", locale());
         document.querySelector("title")?.replaceChildren(t("app.title"));
@@ -132,6 +203,7 @@ export function I18nProvider(props: ParentProps) {
         formatNumber,
         formatFileSize,
         errorKey,
+        errorMessages,
     };
 
     return (

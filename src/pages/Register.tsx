@@ -1,17 +1,18 @@
 import { createSignal } from "solid-js";
 import { useNavigate } from "@solidjs/router";
 import { register } from "@/api/auth";
-import { useI18n, type TranslationKey } from "@/i18n/context";
+import { useI18n } from "@/i18n/context";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import ErrorList from "@/components/ErrorList";
 
 export default function Register() {
-    const { t, errorKey } = useI18n();
+    const { t } = useI18n();
     const [username, setUsername] = createSignal("");
     const [email, setEmail] = createSignal("");
     const [password, setPassword] = createSignal("");
     const [confirmPassword, setConfirmPassword] = createSignal("");
     const [loading, setLoading] = createSignal(false);
-    const [error, setError] = createSignal<TranslationKey | null>(null);
+    const [error, setError] = createSignal<Error | null>(null);
 
     const navigate = useNavigate();
 
@@ -21,12 +22,12 @@ export default function Register() {
         setError(null);
 
         if (!username() || !email() || !password() || !confirmPassword()) {
-            setError("errors.requiredFields");
+            setError(new Error("errors.requiredFields"));
             return;
         }
 
         if (password() !== confirmPassword()) {
-            setError("errors.passwordsMismatch");
+            setError(new Error("errors.passwordsMismatch"));
             return;
         }
 
@@ -37,7 +38,11 @@ export default function Register() {
 
             navigate("/");
         } catch (err) {
-            setError(errorKey(err, "errors.registerFailed"));
+            setError(
+                err instanceof Error
+                    ? err
+                    : new Error("errors.registerFailed"),
+            );
         } finally {
             setLoading(false);
         }
@@ -118,7 +123,11 @@ export default function Register() {
                         />
                     </label>
 
-                    {error() && <div class="auth-error">{t(error()!)}</div>}
+                    <ErrorList
+                        class="auth-error error-list"
+                        error={error()}
+                        fallback="errors.registerFailed"
+                    />
 
                     <button
                         class="btn auth-submit"

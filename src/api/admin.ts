@@ -5,11 +5,7 @@ import {
     type ModerationPost,
     type ModerationPostChanges,
 } from "@/types/admin";
-import { z } from "zod";
-
-const ErrorResponseSchema = z.object({
-    message: z.string(),
-});
+import { throwApiError } from "./errors";
 
 export async function getPendingModerationPost(): Promise<ModerationPost | null> {
     const response = await fetch(`${API}/admin/mod/posts?status=PENDING`, {
@@ -63,13 +59,6 @@ export async function moderatePost(
     });
 
     if (!response.ok) {
-        const body: unknown = await response.json().catch(() => null);
-        const parsedBody = ErrorResponseSchema.safeParse(body);
-
-        console.error(
-            "Moderation request failed:",
-            parsedBody.success ? parsedBody.data.message : response.status,
-        );
-        throw new Error("errors.moderationActionFailed");
+        await throwApiError(response, "errors.moderationActionFailed");
     }
 }

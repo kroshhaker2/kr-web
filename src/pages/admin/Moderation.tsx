@@ -5,8 +5,9 @@ import type {
     ModerationPost,
     ModerationPostChanges,
 } from "@/types/admin";
-import { useI18n, type TranslationKey } from "@/i18n/context";
+import { useI18n } from "@/i18n/context";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import ErrorList from "@/components/ErrorList";
 
 const EMPTY_CHANGES: ModerationPostChanges = {
     title: null,
@@ -23,13 +24,12 @@ export default function Moderation() {
         plural,
         formatDate,
         formatFileSize,
-        errorKey,
     } = useI18n();
     const [post, setPost] = createSignal<ModerationPost | null>(null);
 
     const [loading, setLoading] = createSignal(true);
     const [actionLoading, setActionLoading] = createSignal(false);
-    const [error, setError] = createSignal<TranslationKey | null>(null);
+    const [error, setError] = createSignal<Error | null>(null);
 
     const [rejecting, setRejecting] = createSignal(false);
     const [reason, setReason] = createSignal("");
@@ -71,7 +71,11 @@ export default function Moderation() {
                 sourceUrl: loadedPost.sourceUrl,
             });
         } catch (err) {
-            setError(errorKey(err, "errors.moderationLoadFailed"));
+            setError(
+                err instanceof Error
+                    ? err
+                    : new Error("errors.moderationLoadFailed"),
+            );
         } finally {
             setLoading(false);
         }
@@ -101,7 +105,11 @@ export default function Moderation() {
 
             await loadPost();
         } catch (err) {
-            setError(errorKey(err, "errors.moderationActionFailed"));
+            setError(
+                err instanceof Error
+                    ? err
+                    : new Error("errors.moderationActionFailed"),
+            );
         } finally {
             setActionLoading(false);
         }
@@ -109,7 +117,7 @@ export default function Moderation() {
 
     function approve() {
         if (hasSuggestedTags()) {
-            setError("errors.suggestedTags");
+            setError(new Error("errors.suggestedTags"));
             return;
         }
 
@@ -118,7 +126,7 @@ export default function Moderation() {
 
     function reject() {
         if (!reason().trim()) {
-            setError("errors.rejectionReason");
+            setError(new Error("errors.rejectionReason"));
             return;
         }
 
@@ -147,9 +155,10 @@ export default function Moderation() {
                     <LanguageSwitcher />
                 </header>
 
-                <Show when={error()}>
-                    <div class="form-error">{t(error()!)}</div>
-                </Show>
+                <ErrorList
+                    error={error()}
+                    fallback="errors.moderationActionFailed"
+                />
 
                 <Show
                     when={!loading()}

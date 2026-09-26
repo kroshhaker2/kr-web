@@ -1,5 +1,6 @@
 import { API } from "@/config";
 import { UserSchema, type User } from "@/types/user";
+import { throwApiError } from "./errors";
 
 export async function register(
     username: string,
@@ -20,7 +21,7 @@ export async function register(
     });
 
     if (!response.ok) {
-        throw new Error("errors.registerFailed");
+        await throwApiError(response, "errors.registerFailed");
     }
 }
 
@@ -41,7 +42,7 @@ export async function login(
     });
 
     if (!response.ok) {
-        throw new Error("errors.invalidCredentials");
+        await throwApiError(response, "errors.invalidCredentials");
     }
 }
 
@@ -51,7 +52,7 @@ export async function me(): Promise<User> {
     });
 
     if (!response.ok) {
-        throw new Error("errors.unauthorized");
+        await throwApiError(response, "errors.unauthorized");
     }
 
     const data: unknown = await response.json();

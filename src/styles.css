@@ -577,6 +577,15 @@ select.input {
     font-size: 0.8rem;
 }
 
+.error-list {
+    margin-block: 0;
+    padding-left: 1.8rem;
+}
+
+.error-list li + li {
+    margin-top: 0.35rem;
+}
+
 .auth-footer {
     margin-top: 1.5rem;
     text-align: center;

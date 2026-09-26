@@ -5,6 +5,7 @@ import type {
     UpdatePostResponse,
 } from "../types/post";
 import { API } from "@/config";
+import { throwApiError } from "./errors";
 
 interface CreatePostPayload {
     file: File;
@@ -35,7 +36,7 @@ export async function createPost(payload: CreatePostPayload): Promise<void> {
     });
 
     if (!response.ok) {
-        throw new Error("errors.uploadFailed");
+        await throwApiError(response, "errors.uploadFailed");
     }
 }
 

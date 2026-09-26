@@ -2,12 +2,13 @@ import { createSignal, Show } from "solid-js";
 import { useNavigate } from "@solidjs/router";
 import { createPost } from "@/api/posts";
 import type { Rating } from "@/types/post";
-import { useI18n, type TranslationKey } from "@/i18n/context";
+import { useI18n } from "@/i18n/context";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import ErrorList from "@/components/ErrorList";
 
 export default function Upload() {
     const navigate = useNavigate();
-    const { t, formatFileSize, errorKey } = useI18n();
+    const { t, formatFileSize } = useI18n();
 
     const [file, setFile] = createSignal<File | null>(null);
     const [preview, setPreview] = createSignal<string | null>(null);
@@ -19,7 +20,7 @@ export default function Upload() {
 
     const [dragging, setDragging] = createSignal(false);
     const [loading, setLoading] = createSignal(false);
-    const [error, setError] = createSignal<TranslationKey | null>(null);
+    const [error, setError] = createSignal<Error | null>(null);
     const [submitted, setSubmitted] = createSignal(false);
 
     const [metadata, setMetadata] = createSignal<{
@@ -39,12 +40,12 @@ export default function Upload() {
             !selected.type.startsWith("image/") &&
             !selected.type.startsWith("video/")
         ) {
-            setError("errors.uploadType");
+            setError(new Error("errors.uploadType"));
             return;
         }
 
         if (selected.size > 20 * 1024 * 1024) {
-            setError("errors.uploadSize");
+            setError(new Error("errors.uploadSize"));
             return;
         }
 
@@ -125,12 +126,12 @@ export default function Upload() {
         const currentFile = file();
 
         if (!currentFile) {
-            setError("errors.fileRequired");
+            setError(new Error("errors.fileRequired"));
             return;
         }
 
         if (!title().trim()) {
-            setError("errors.titleRequired");
+            setError(new Error("errors.titleRequired"));
             return;
         }
 
@@ -153,7 +154,9 @@ export default function Upload() {
 
             setSubmitted(true);
         } catch (err) {
-            setError(errorKey(err, "errors.uploadFailed"));
+            setError(
+                err instanceof Error ? err : new Error("errors.uploadFailed"),
+            );
         } finally {
             setLoading(false);
         }
@@ -368,9 +371,10 @@ export default function Upload() {
                             </small>
                         </label>
 
-                        <Show when={error()}>
-                            <div class="form-error">{t(error()!)}</div>
-                        </Show>
+                        <ErrorList
+                            error={error()}
+                            fallback="errors.uploadFailed"
+                        />
 
                         <button
                             class="btn upload-submit"
