@@ -1,29 +1,32 @@
 import { createSignal } from "solid-js";
 import { useNavigate } from "@solidjs/router";
 import { register } from "@/api/auth";
+import { useI18n, type TranslationKey } from "@/i18n/context";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 export default function Register() {
+    const { t, errorKey } = useI18n();
     const [username, setUsername] = createSignal("");
     const [email, setEmail] = createSignal("");
     const [password, setPassword] = createSignal("");
     const [confirmPassword, setConfirmPassword] = createSignal("");
     const [loading, setLoading] = createSignal(false);
-    const [error, setError] = createSignal("");
+    const [error, setError] = createSignal<TranslationKey | null>(null);
 
     const navigate = useNavigate();
 
     async function handleSubmit(event: SubmitEvent) {
         event.preventDefault();
 
-        setError("");
+        setError(null);
 
         if (!username() || !email() || !password() || !confirmPassword()) {
-            setError("Заполните все поля");
+            setError("errors.requiredFields");
             return;
         }
 
         if (password() !== confirmPassword()) {
-            setError("Пароли не совпадают");
+            setError("errors.passwordsMismatch");
             return;
         }
 
@@ -34,11 +37,7 @@ export default function Register() {
 
             navigate("/");
         } catch (err) {
-            setError(
-                err instanceof Error
-                    ? err.message
-                    : "Не удалось зарегистрироваться",
-            );
+            setError(errorKey(err, "errors.registerFailed"));
         } finally {
             setLoading(false);
         }
@@ -48,8 +47,9 @@ export default function Register() {
         <main class="auth-page">
             <section class="auth-card">
                 <div class="auth-header">
-                    <h1>Регистрация</h1>
-                    <p>Создайте аккаунт Kr</p>
+                    <LanguageSwitcher />
+                    <h1>{t("auth.register.title")}</h1>
+                    <p>{t("auth.register.subtitle")}</p>
                 </div>
 
                 <form
@@ -59,7 +59,7 @@ export default function Register() {
                     }}
                 >
                     <label>
-                        <span>Имя пользователя</span>
+                        <span>{t("auth.register.username")}</span>
                         <input
                             class="input"
                             type="text"
@@ -74,7 +74,7 @@ export default function Register() {
                     </label>
 
                     <label>
-                        <span>Email</span>
+                        <span>{t("auth.email")}</span>
                         <input
                             class="input"
                             type="email"
@@ -89,7 +89,7 @@ export default function Register() {
                     </label>
 
                     <label>
-                        <span>Пароль</span>
+                        <span>{t("auth.password")}</span>
                         <input
                             class="input"
                             type="password"
@@ -104,7 +104,7 @@ export default function Register() {
                     </label>
 
                     <label>
-                        <span>Повторите пароль</span>
+                        <span>{t("auth.register.confirmPassword")}</span>
                         <input
                             class="input"
                             type="password"
@@ -118,19 +118,22 @@ export default function Register() {
                         />
                     </label>
 
-                    {error() && <div class="auth-error">{error()}</div>}
+                    {error() && <div class="auth-error">{t(error()!)}</div>}
 
                     <button
                         class="btn auth-submit"
                         type="submit"
                         disabled={loading()}
                     >
-                        {loading() ? "Регистрация..." : "Зарегистрироваться"}
+                        {loading()
+                            ? t("auth.register.submitting")
+                            : t("auth.register.submit")}
                     </button>
                 </form>
 
                 <div class="auth-footer">
-                    Уже есть аккаунт? <a href="/login">Войти</a>
+                    {t("auth.register.hasAccount")} {" "}
+                    <a href="/login">{t("auth.register.loginLink")}</a>
                 </div>
             </section>
         </main>

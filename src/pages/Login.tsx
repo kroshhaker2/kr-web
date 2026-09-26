@@ -1,22 +1,25 @@
 import { login } from "@/api/auth";
 import { useNavigate } from "@solidjs/router";
 import { createSignal } from "solid-js";
+import { useI18n, type TranslationKey } from "@/i18n/context";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 export default function Login() {
+    const { t, errorKey } = useI18n();
     const [email, setEmail] = createSignal("");
     const [password, setPassword] = createSignal("");
     const [loading, setLoading] = createSignal(false);
-    const [error, setError] = createSignal("");
+    const [error, setError] = createSignal<TranslationKey | null>(null);
 
     const navigate = useNavigate();
 
     async function handleSubmit(event: SubmitEvent) {
         event.preventDefault();
 
-        setError("");
+        setError(null);
 
         if (!email() || !password()) {
-            setError("Заполните все поля");
+            setError("errors.requiredFields");
             return;
         }
 
@@ -27,7 +30,7 @@ export default function Login() {
 
             navigate("/");
         } catch (err) {
-            setError(err instanceof Error ? err.message : "Не удалось войти");
+            setError(errorKey(err, "errors.loginFailed"));
         } finally {
             setLoading(false);
         }
@@ -37,8 +40,9 @@ export default function Login() {
         <main class="auth-page">
             <section class="auth-card">
                 <div class="auth-header">
-                    <h1>Вход</h1>
-                    <p>Войдите в аккаунт Kr</p>
+                    <LanguageSwitcher />
+                    <h1>{t("auth.login.title")}</h1>
+                    <p>{t("auth.login.subtitle")}</p>
                 </div>
 
                 <form
@@ -48,7 +52,7 @@ export default function Login() {
                     }}
                 >
                     <label>
-                        <span>Э. Почта</span>
+                        <span>{t("auth.email")}</span>
                         <input
                             class="input"
                             type="email"
@@ -63,7 +67,7 @@ export default function Login() {
                     </label>
 
                     <label>
-                        <span>Пароль</span>
+                        <span>{t("auth.password")}</span>
                         <input
                             class="input"
                             type="password"
@@ -77,19 +81,22 @@ export default function Login() {
                         />
                     </label>
 
-                    {error() && <div class="auth-error">{error()}</div>}
+                    {error() && <div class="auth-error">{t(error()!)}</div>}
 
                     <button
                         class="btn auth-submit"
                         type="submit"
                         disabled={loading()}
                     >
-                        {loading() ? "Вход..." : "Войти"}
+                        {loading()
+                            ? t("auth.login.submitting")
+                            : t("common.signIn")}
                     </button>
                 </form>
 
                 <div class="auth-footer">
-                    Нет аккаунта? <a href="/register">Зарегистрироваться</a>
+                    {t("auth.login.noAccount")} {" "}
+                    <a href="/register">{t("auth.login.registerLink")}</a>
                 </div>
             </section>
         </main>

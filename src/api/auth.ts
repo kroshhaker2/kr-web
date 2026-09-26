@@ -20,7 +20,7 @@ export async function register(
     });
 
     if (!response.ok) {
-        throw new Error("Не удалось зарегистрировать пользователя");
+        throw new Error("errors.registerFailed");
     }
 }
 
@@ -41,7 +41,7 @@ export async function login(
     });
 
     if (!response.ok) {
-        throw new Error("Неверный email или пароль");
+        throw new Error("errors.invalidCredentials");
     }
 }
 
@@ -51,7 +51,7 @@ export async function me(): Promise<User> {
     });
 
     if (!response.ok) {
-        throw new Error("Пользователь не авторизован");
+        throw new Error("errors.unauthorized");
     }
 
     const data: unknown = await response.json();

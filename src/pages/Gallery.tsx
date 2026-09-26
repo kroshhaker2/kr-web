@@ -4,13 +4,15 @@ import TopBar from "@/components/TopBar";
 import Pins from "@/components/Pins";
 import { getPosts } from "@/api/posts";
 import type { Post } from "@/types/post";
+import { useI18n, type TranslationKey } from "@/i18n/context";
 
 export default function Gallery() {
+    const { t } = useI18n();
     const [posts, setPosts] = createSignal<Post[]>([]);
     const [page, setPage] = createSignal(1);
     const [totalPages, setTotalPages] = createSignal(1);
     const [loading, setLoading] = createSignal(false);
-    const [error, setError] = createSignal<string | null>(null);
+    const [error, setError] = createSignal<TranslationKey | null>(null);
 
     async function loadPosts(targetPage = page()) {
         setLoading(true);
@@ -25,9 +27,7 @@ export default function Gallery() {
         } catch (err) {
             console.error(err);
 
-            setError(
-                "Не удалось загрузить картинки. Проверь, запущен ли сервер.",
-            );
+            setError("gallery.loadError");
         } finally {
             setLoading(false);
         }
@@ -62,18 +62,18 @@ export default function Gallery() {
             />
 
             <Show when={loading()}>
-                <div class="status">Загрузка…</div>
+                <div class="status">{t("common.loading")}</div>
             </Show>
 
             <Show when={error()}>
-                {(message) => <div class="status error">{message()}</div>}
+                {(message) => <div class="status error">{t(message())}</div>}
             </Show>
 
             <Show
                 when={!loading() && !error() && posts().length > 0}
                 fallback={
                     <Show when={!loading() && !error()}>
-                        <div class="status">На этой странице ничего нет.</div>
+                        <div class="status">{t("gallery.empty")}</div>
                     </Show>
                 }
             >

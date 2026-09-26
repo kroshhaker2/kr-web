@@ -1,6 +1,7 @@
 import { createSignal, Show } from "solid-js";
 import type { Post } from "../types/post";
 import { setLike } from "../api/posts";
+import { useI18n } from "@/i18n/context";
 
 interface Props {
     post: Post;
@@ -9,6 +10,7 @@ interface Props {
 }
 
 export default function PostCard(props: Props) {
+    const { t } = useI18n();
     const [liked, setLiked] = createSignal(props.post.liked);
     const [loading, setLoading] = createSignal(true);
     const [saving, setSaving] = createSignal(false);
@@ -27,7 +29,7 @@ export default function PostCard(props: Props) {
         try {
             await setLike(props.post.id, next);
         } catch (error) {
-            console.error("Не удалось сохранить лайк:", error);
+            console.error("Could not save like:", error);
             setLiked(!next);
         } finally {
             setSaving(false);
@@ -62,7 +64,7 @@ export default function PostCard(props: Props) {
                         "is-liked": liked(),
                     }}
                     disabled={saving()}
-                    aria-label="Лайк"
+                    aria-label={t("gallery.like")}
                     onClick={handleLikeClick}
                 >
                     ♥

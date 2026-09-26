@@ -185,6 +185,12 @@ body {
     cursor: not-allowed;
 }
 
+.language-switcher {
+    min-width: 3rem;
+    padding-inline: 0.7rem;
+    font-family: "IBM Plex Mono", monospace;
+}
+
 .like-btn {
     position: absolute;
     top: 8px;
@@ -519,6 +525,10 @@ select.input {
     margin-bottom: 1.5rem;
 }
 
+.auth-header .language-switcher {
+    float: right;
+}
+
 .auth-header h1 {
     margin: 0;
     font-size: 1.4rem;
@@ -595,6 +605,10 @@ select.input {
 }
 
 .upload-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
     margin-bottom: 24px;
 }
 

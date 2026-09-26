@@ -2,9 +2,12 @@ import { createSignal, Show } from "solid-js";
 import { useNavigate } from "@solidjs/router";
 import { createPost } from "@/api/posts";
 import type { Rating } from "@/types/post";
+import { useI18n, type TranslationKey } from "@/i18n/context";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 export default function Upload() {
     const navigate = useNavigate();
+    const { t, formatFileSize, errorKey } = useI18n();
 
     const [file, setFile] = createSignal<File | null>(null);
     const [preview, setPreview] = createSignal<string | null>(null);
@@ -16,11 +19,11 @@ export default function Upload() {
 
     const [dragging, setDragging] = createSignal(false);
     const [loading, setLoading] = createSignal(false);
-    const [error, setError] = createSignal<string | null>(null);
+    const [error, setError] = createSignal<TranslationKey | null>(null);
     const [submitted, setSubmitted] = createSignal(false);
 
     const [metadata, setMetadata] = createSignal<{
-        type: "Фото" | "Видео";
+        type: "image" | "video";
         format: string;
         width: number;
         height: number;
@@ -36,12 +39,12 @@ export default function Upload() {
             !selected.type.startsWith("image/") &&
             !selected.type.startsWith("video/")
         ) {
-            setError("Можно загружать только изображения и видео.");
+            setError("errors.uploadType");
             return;
         }
 
         if (selected.size > 20 * 1024 * 1024) {
-            setError("Максимальный размер файла — 20 МБ.");
+            setError("errors.uploadSize");
             return;
         }
 
@@ -55,7 +58,7 @@ export default function Upload() {
 
             image.onload = () => {
                 setMetadata({
-                    type: "Фото",
+                    type: "image",
                     format:
                         selected.type.split("/")[1]?.toUpperCase() ?? "UNKNOWN",
                     width: image.naturalWidth,
@@ -73,7 +76,7 @@ export default function Upload() {
 
         video.onloadedmetadata = () => {
             setMetadata({
-                type: "Видео",
+                type: "video",
                 format: selected.type.split("/")[1]?.toUpperCase() ?? "UNKNOWN",
                 width: video.videoWidth,
                 height: video.videoHeight,
@@ -111,14 +114,6 @@ export default function Upload() {
         setMetadata(null);
     }
 
-    function formatFileSize(bytes: number): string {
-        if (bytes < 1024 * 1024) {
-            return `${(bytes / 1024).toFixed(0)} КБ`;
-        }
-
-        return `${(bytes / 1024 / 1024).toFixed(2)} МБ`;
-    }
-
     function formatDuration(seconds: number): string {
         const minutes = Math.floor(seconds / 60);
         const remainingSeconds = Math.floor(seconds % 60);
@@ -130,12 +125,12 @@ export default function Upload() {
         const currentFile = file();
 
         if (!currentFile) {
-            setError("Выберите изображение.");
+            setError("errors.fileRequired");
             return;
         }
 
         if (!title().trim()) {
-            setError("Введите название изображения.");
+            setError("errors.titleRequired");
             return;
         }
 
@@ -158,11 +153,7 @@ export default function Upload() {
 
             setSubmitted(true);
         } catch (err) {
-            setError(
-                err instanceof Error
-                    ? err.message
-                    : "Не удалось отправить изображение.",
-            );
+            setError(errorKey(err, "errors.uploadFailed"));
         } finally {
             setLoading(false);
         }
@@ -177,11 +168,10 @@ export default function Upload() {
                         <section class="upload-success">
                             <div class="upload-success-icon">✓</div>
 
-                            <h1>Изображение отправлено</h1>
+                            <h1>{t("upload.successTitle")}</h1>
 
                             <p>
-                                Оно находится на модерации. После проверки
-                                изображение появится в галерее.
+                                {t("upload.successDescription")}
                             </p>
 
                             <div class="upload-success-actions">
@@ -189,7 +179,7 @@ export default function Upload() {
                                     class="btn"
                                     onClick={() => navigate("/")}
                                 >
-                                    Вернуться в галерею
+                                    {t("upload.backToGallery")}
                                 </button>
 
                                 <button
@@ -203,7 +193,7 @@ export default function Upload() {
                                         setRating("SAFE");
                                     }}
                                 >
-                                    Загрузить ещё
+                                    {t("upload.uploadAnother")}
                                 </button>
                             </div>
                         </section>
@@ -211,22 +201,26 @@ export default function Upload() {
                 >
                     <section class="upload-header">
                         <div>
-                            <h1>Загрузить изображение</h1>
+                            <h1>{t("upload.title")}</h1>
                         </div>
+                        <LanguageSwitcher />
                     </section>
 
                     <Show
                         when={!file()}
                         fallback={
                             <div class="upload-preview">
-                                <img src={preview() ?? ""} alt="Предпросмотр" />
+                                <img
+                                    src={preview() ?? ""}
+                                    alt={t("upload.previewAlt")}
+                                />
 
                                 <div class="upload-preview-overlay">
                                     <button
                                         class="btn btn-secondary"
                                         onClick={clearFile}
                                     >
-                                        Выбрать другое
+                                        {t("upload.chooseAnother")}
                                     </button>
                                 </div>
                             </div>
@@ -245,17 +239,17 @@ export default function Upload() {
                         >
                             <input
                                 type="file"
-                                accept="image/*"
+                                accept="image/*,video/*"
                                 onChange={onFileInput}
                             />
 
                             <div class="upload-dropzone-icon">+</div>
 
-                            <strong>Перетащите изображение сюда</strong>
+                            <strong>{t("upload.drop")}</strong>
 
-                            <span>или нажмите для выбора файла</span>
+                            <span>{t("upload.choose")}</span>
 
-                            <small>PNG, JPEG, WebP · до 20 МБ</small>
+                            <small>{t("upload.requirements")}</small>
                         </label>
                     </Show>
 
@@ -263,17 +257,23 @@ export default function Upload() {
                         {(info) => (
                             <div class="upload-metadata">
                                 <div>
-                                    <span>Тип</span>
-                                    <strong>{info().type}</strong>
+                                    <span>{t("upload.type")}</span>
+                                    <strong>
+                                        {t(
+                                            info().type === "image"
+                                                ? "upload.image"
+                                                : "upload.video",
+                                        )}
+                                    </strong>
                                 </div>
 
                                 <div>
-                                    <span>Формат</span>
+                                    <span>{t("upload.format")}</span>
                                     <strong>{info().format}</strong>
                                 </div>
 
                                 <div>
-                                    <span>Разрешение</span>
+                                    <span>{t("upload.resolution")}</span>
                                     <strong>
                                         {info().width} × {info().height}
                                     </strong>
@@ -281,7 +281,7 @@ export default function Upload() {
 
                                 <Show when={info().duration !== undefined}>
                                     <div>
-                                        <span>Длительность</span>
+                                        <span>{t("upload.duration")}</span>
                                         <strong>
                                             {formatDuration(info().duration!)}
                                         </strong>
@@ -289,7 +289,7 @@ export default function Upload() {
                                 </Show>
 
                                 <div>
-                                    <span>Размер</span>
+                                    <span>{t("upload.size")}</span>
                                     <strong>
                                         {formatFileSize(file()!.size)}
                                     </strong>
@@ -300,7 +300,7 @@ export default function Upload() {
 
                     <div class="upload-form">
                         <label>
-                            <span>Название</span>
+                            <span>{t("upload.name")}</span>
 
                             <input
                                 class="input"
@@ -310,12 +310,12 @@ export default function Upload() {
                                 onInput={(event) =>
                                     setTitle(event.currentTarget.value)
                                 }
-                                placeholder="Название изображения"
+                                placeholder={t("upload.namePlaceholder")}
                             />
                         </label>
 
                         <label>
-                            <span>Описание</span>
+                            <span>{t("upload.description")}</span>
 
                             <textarea
                                 class="input textarea"
@@ -324,12 +324,12 @@ export default function Upload() {
                                 onInput={(event) =>
                                     setDescription(event.currentTarget.value)
                                 }
-                                placeholder="Необязательно"
+                                placeholder={t("common.optional")}
                             />
                         </label>
 
                         <label>
-                            <span>Рейтинг</span>
+                            <span>{t("upload.rating")}</span>
 
                             <select
                                 class="input"
@@ -338,14 +338,18 @@ export default function Upload() {
                                     setRating(event.currentTarget.value as Rating)
                                 }
                             >
-                                <option value="SAFE">Безопасный (SAFE)</option>
-                                <option value="QUESTIONABLE">Сомнительный (QUESTIONABLE)</option>
-                                <option value="EXPLICIT">Откровенный (EXPLICIT)</option>
+                                <option value="SAFE">{t("ratings.SAFE")}</option>
+                                <option value="QUESTIONABLE">
+                                    {t("ratings.QUESTIONABLE")}
+                                </option>
+                                <option value="EXPLICIT">
+                                    {t("ratings.EXPLICIT")}
+                                </option>
                             </select>
                         </label>
 
                         <label>
-                            <span>Теги</span>
+                            <span>{t("upload.tags")}</span>
 
                             <input
                                 class="input"
@@ -354,16 +358,16 @@ export default function Upload() {
                                 onInput={(event) =>
                                     setTags(event.currentTarget.value)
                                 }
-                                placeholder="nature, city, night"
+                                placeholder={t("common.tagsPlaceholder")}
                             />
 
                             <small class="input-hint">
-                                Разделяйте теги запятыми.
+                                {t("common.tagsHint")}
                             </small>
                         </label>
 
                         <Show when={error()}>
-                            <div class="form-error">{error()}</div>
+                            <div class="form-error">{t(error()!)}</div>
                         </Show>
 
                         <button
@@ -372,8 +376,8 @@ export default function Upload() {
                             onClick={() => void submit()}
                         >
                             {loading()
-                                ? "Отправка..."
-                                : "Отправить на модерацию"}
+                                ? t("upload.submitting")
+                                : t("upload.submit")}
                         </button>
                     </div>
                 </Show>

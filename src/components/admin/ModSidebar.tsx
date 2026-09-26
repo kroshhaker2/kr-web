@@ -1,5 +1,6 @@
 import { createSignal } from "solid-js";
 import { A } from "@solidjs/router";
+import { useI18n } from "@/i18n/context";
 
 interface ModSidebarProps {
     selectedCount: number;
@@ -10,6 +11,7 @@ interface ModSidebarProps {
 }
 
 export default function ModSidebar(props: ModSidebarProps) {
+    const { t, formatNumber } = useI18n();
     const [tagValue, setTagValue] = createSignal("");
     const [filterQuery, setFilterQuery] = createSignal("");
 
@@ -24,19 +26,19 @@ export default function ModSidebar(props: ModSidebarProps) {
         <aside class="admin-sidebar">
             <div class="admin-sidebar-header">
                 <A class="admin-sidebar-back" href="/admin">
-                    ← Dashboard
+                    {t("navigation.dashboard")}
                 </A>
             </div>
 
             <div class="admin-sidebar-filters">
-                <h3>Фильтры</h3>
+                <h3>{t("sidebar.filters")}</h3>
 
                 <label>
-                    Поиск
+                    {t("sidebar.search")}
                     <input
                         class="input"
                         type="text"
-                        placeholder="автор type:gif тег..."
+                        placeholder={t("sidebar.searchPlaceholder")}
                         value={filterQuery()}
                         onInput={(e) => {
                             setFilterQuery(e.currentTarget.value);
@@ -48,13 +50,15 @@ export default function ModSidebar(props: ModSidebarProps) {
 
             <div class="admin-sidebar-actions">
                 <span class="selection-count">
-                    Выбрано: {props.selectedCount}
+                    {t("sidebar.selected", {
+                        count: formatNumber(props.selectedCount),
+                    })}
                 </span>
 
                 <input
                     class="input"
                     type="text"
-                    placeholder="Название тега..."
+                    placeholder={t("sidebar.tagPlaceholder")}
                     value={tagValue()}
                     onInput={(e) => setTagValue(e.currentTarget.value)}
                 />
@@ -64,7 +68,7 @@ export default function ModSidebar(props: ModSidebarProps) {
                     disabled={props.selectedCount === 0 || !tagValue().trim()}
                     onClick={() => submitTag(props.onAddTag)}
                 >
-                    Добавить тег
+                    {t("sidebar.addTag")}
                 </button>
 
                 <button
@@ -72,7 +76,7 @@ export default function ModSidebar(props: ModSidebarProps) {
                     disabled={props.selectedCount === 0 || !tagValue().trim()}
                     onClick={() => submitTag(props.onRemoveTag)}
                 >
-                    Удалить тег
+                    {t("sidebar.removeTag")}
                 </button>
 
                 <button
@@ -80,7 +84,7 @@ export default function ModSidebar(props: ModSidebarProps) {
                     disabled={props.selectedCount === 0}
                     onClick={props.onDeleteSelected}
                 >
-                    Удалить выбранное
+                    {t("sidebar.deleteSelected")}
                 </button>
             </div>
         </aside>

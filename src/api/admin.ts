@@ -21,7 +21,7 @@ export async function getPendingModerationPost(): Promise<ModerationPost | null>
     }
 
     if (!response.ok) {
-        throw new Error("Не удалось загрузить очередь.");
+        throw new Error("errors.moderationLoadFailed");
     }
 
     const data: unknown = await response.json();
@@ -66,10 +66,10 @@ export async function moderatePost(
         const body: unknown = await response.json().catch(() => null);
         const parsedBody = ErrorResponseSchema.safeParse(body);
 
-        throw new Error(
-            parsedBody.success
-                ? parsedBody.data.message
-                : "Не удалось выполнить действие.",
+        console.error(
+            "Moderation request failed:",
+            parsedBody.success ? parsedBody.data.message : response.status,
         );
+        throw new Error("errors.moderationActionFailed");
     }
 }

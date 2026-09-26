@@ -1,4 +1,6 @@
 import { cycleTheme } from "@/stores/theme";
+import { useI18n } from "@/i18n/context";
+import LanguageSwitcher from "./LanguageSwitcher";
 import UserButton from "./UserButton";
 
 interface Props {
@@ -14,6 +16,8 @@ interface Props {
 }
 
 export default function TopBar(props: Props) {
+    const { t, formatNumber } = useI18n();
+
     return (
         <div class="topbar">
             <button
@@ -21,17 +25,21 @@ export default function TopBar(props: Props) {
                 disabled={props.loading || props.page <= 1}
                 onClick={props.onPrev}
             >
-                ← Назад
+                {t("navigation.previous")}
             </button>
 
             <span class="frame-counter">
-                <b>{props.page}</b> / {props.totalPages || "—"}
+                <b>{formatNumber(props.page)}</b> /{" "}
+                {props.totalPages
+                    ? formatNumber(props.totalPages)
+                    : t("common.notAvailable")}
             </span>
 
             <input
                 class="input"
                 type="text"
-                placeholder="Страница…"
+                placeholder={t("navigation.pagePlaceholder")}
+                aria-label={t("navigation.pagePlaceholder")}
                 inputmode="numeric"
                 onKeyDown={(event) => {
                     if (event.key !== "Enter") return;
@@ -50,13 +58,14 @@ export default function TopBar(props: Props) {
                 disabled={props.loading || props.page >= props.totalPages}
                 onClick={props.onNext}
             >
-                Дальше →
+                {t("navigation.next")}
             </button>
 
             <button class="btn" onClick={cycleTheme}>
-                Тема
+                {t("common.theme")}
             </button>
 
+            <LanguageSwitcher />
             <UserButton />
         </div>
     );

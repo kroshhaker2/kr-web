@@ -14,19 +14,6 @@ interface CreatePostPayload {
     rating: Rating;
 }
 
-function getErrorMessage(value: unknown): string | undefined {
-    if (
-        typeof value !== "object" ||
-        value === null ||
-        !("message" in value) ||
-        typeof value.message !== "string"
-    ) {
-        return undefined;
-    }
-
-    return value.message;
-}
-
 export async function createPost(payload: CreatePostPayload): Promise<void> {
     const formData = new FormData();
 
@@ -48,11 +35,7 @@ export async function createPost(payload: CreatePostPayload): Promise<void> {
     });
 
     if (!response.ok) {
-        const body: unknown = await response.json().catch(() => null);
-
-        throw new Error(
-            getErrorMessage(body) ?? "Не удалось отправить изображение.",
-        );
+        throw new Error("errors.uploadFailed");
     }
 }
 

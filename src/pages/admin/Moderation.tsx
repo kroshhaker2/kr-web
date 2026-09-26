@@ -5,6 +5,8 @@ import type {
     ModerationPost,
     ModerationPostChanges,
 } from "@/types/admin";
+import { useI18n, type TranslationKey } from "@/i18n/context";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 const EMPTY_CHANGES: ModerationPostChanges = {
     title: null,
@@ -16,11 +18,18 @@ const EMPTY_CHANGES: ModerationPostChanges = {
 };
 
 export default function Moderation() {
+    const {
+        t,
+        plural,
+        formatDate,
+        formatFileSize,
+        errorKey,
+    } = useI18n();
     const [post, setPost] = createSignal<ModerationPost | null>(null);
 
     const [loading, setLoading] = createSignal(true);
     const [actionLoading, setActionLoading] = createSignal(false);
-    const [error, setError] = createSignal<string | null>(null);
+    const [error, setError] = createSignal<TranslationKey | null>(null);
 
     const [rejecting, setRejecting] = createSignal(false);
     const [reason, setReason] = createSignal("");
@@ -62,11 +71,7 @@ export default function Moderation() {
                 sourceUrl: loadedPost.sourceUrl,
             });
         } catch (err) {
-            setError(
-                err instanceof Error
-                    ? err.message
-                    : "Не удалось загрузить очередь.",
-            );
+            setError(errorKey(err, "errors.moderationLoadFailed"));
         } finally {
             setLoading(false);
         }
@@ -96,11 +101,7 @@ export default function Moderation() {
 
             await loadPost();
         } catch (err) {
-            setError(
-                err instanceof Error
-                    ? err.message
-                    : "Не удалось выполнить действие.",
-            );
+            setError(errorKey(err, "errors.moderationActionFailed"));
         } finally {
             setActionLoading(false);
         }
@@ -108,7 +109,7 @@ export default function Moderation() {
 
     function approve() {
         if (hasSuggestedTags()) {
-            setError("Обработайте предложенные теги перед одобрением.");
+            setError("errors.suggestedTags");
             return;
         }
 
@@ -117,32 +118,11 @@ export default function Moderation() {
 
     function reject() {
         if (!reason().trim()) {
-            setError("Укажите причину отклонения.");
+            setError("errors.rejectionReason");
             return;
         }
 
         void moderate({ type: "REJECT", reason: reason().trim() });
-    }
-
-    function formatSize(bytes: number) {
-        if (bytes < 1024 * 1024) {
-            return `${Math.round(bytes / 1024)} КБ`;
-        }
-
-        return `${(bytes / 1024 / 1024).toFixed(1)} МБ`;
-    }
-
-    function formatDate(value: string | null) {
-        if (!value) return "—";
-
-        const date = new Date(value);
-
-        if (Number.isNaN(date.getTime())) return value;
-
-        return new Intl.DateTimeFormat("ru-RU", {
-            dateStyle: "medium",
-            timeStyle: "short",
-        }).format(date);
     }
 
     createEffect(() => {
@@ -154,26 +134,28 @@ export default function Moderation() {
             <div class="moderation-container">
                 <header class="moderation-header">
                     <div>
-                        <h1>Модерация</h1>
+                        <h1>{t("moderation.title")}</h1>
                         <p>
-                            Посты, ожидающие проверки.
+                            {t("moderation.subtitle")}
                         </p>
                     </div>
 
                     <div class="moderation-counter">
-                        {post()?.count ?? 0} ожидает проверки
+                        {plural("moderation.pendingPosts", post()?.count ?? 0)}
                     </div>
+
+                    <LanguageSwitcher />
                 </header>
 
                 <Show when={error()}>
-                    <div class="form-error">{error()}</div>
+                    <div class="form-error">{t(error()!)}</div>
                 </Show>
 
                 <Show
                     when={!loading()}
                     fallback={
                         <div class="moderation-empty">
-                            Загрузка очереди...
+                            {t("moderation.loading")}
                         </div>
                     }
                 >
@@ -183,17 +165,17 @@ export default function Moderation() {
                             <section class="moderation-empty">
                                 <div class="moderation-empty-icon">✓</div>
 
-                                <h2>Очередь пуста</h2>
+                                <h2>{t("moderation.emptyTitle")}</h2>
 
                                 <p>
-                                    Все посты проверены.
+                                    {t("moderation.emptyDescription")}
                                 </p>
 
                                 <button
                                     class="btn btn-secondary"
                                     onClick={() => void loadPost()}
                                 >
-                                    Обновить
+                                    {t("common.refresh")}
                                 </button>
                             </section>
                         }
@@ -210,31 +192,31 @@ export default function Moderation() {
                                 <aside class="moderation-info">
                                     <dl class="moderation-details">
                                         <div>
-                                            <dt>Автор</dt>
+                                            <dt>{t("moderation.author")}</dt>
                                             <dd>
                                                 {post().uploadedBy?.username ??
-                                                    "Неизвестен"}
+                                                    t("common.unknown")}
                                             </dd>
                                         </div>
                                         <div>
-                                            <dt>Статус</dt>
-                                            <dd>{post().status}</dd>
+                                            <dt>{t("moderation.status")}</dt>
+                                            <dd>{t(`statuses.${post().status}`)}</dd>
                                         </div>
                                         <div>
-                                            <dt>Загружен</dt>
+                                            <dt>{t("moderation.uploadedAt")}</dt>
                                             <dd>
                                                 {formatDate(post().createdAt)}
                                             </dd>
                                         </div>
                                         <div>
-                                            <dt>Проверен</dt>
+                                            <dt>{t("moderation.moderatedAt")}</dt>
                                             <dd>
                                                 {formatDate(post().moderatedAt)}
                                             </dd>
                                         </div>
                                         <Show when={post().deletedAt}>
                                             <div>
-                                                <dt>Удалён</dt>
+                                                <dt>{t("moderation.deletedAt")}</dt>
                                                 <dd>
                                                     {formatDate(
                                                         post().deletedAt,
@@ -243,32 +225,39 @@ export default function Moderation() {
                                             </div>
                                         </Show>
                                         <div>
-                                            <dt>Файл</dt>
+                                            <dt>{t("moderation.file")}</dt>
                                             <dd>{post().originalFilename}</dd>
                                         </div>
                                         <div>
-                                            <dt>Тип и размер</dt>
+                                            <dt>{t("moderation.typeAndSize")}</dt>
                                             <dd>
                                                 {post().mimeType} ·{" "}
-                                                {formatSize(post().size)}
+                                                {formatFileSize(post().size)}
                                             </dd>
                                         </div>
                                         <div>
-                                            <dt>Статистика</dt>
+                                            <dt>{t("moderation.statistics")}</dt>
                                             <dd>
-                                                {post().views} просмотров ·{" "}
-                                                {post().favorites} в избранном
+                                                {plural(
+                                                    "moderation.views",
+                                                    post().views,
+                                                )}{" "}
+                                                ·{" "}
+                                                {plural(
+                                                    "moderation.favorites",
+                                                    post().favorites,
+                                                )}
                                             </dd>
                                         </div>
                                         <div class="moderation-detail-id">
-                                            <dt>ID</dt>
+                                            <dt>{t("moderation.id")}</dt>
                                             <dd>{post().id}</dd>
                                         </div>
                                     </dl>
 
                                     <div class="moderation-fields">
                                         <label>
-                                            <span>Название</span>
+                                            <span>{t("moderation.titleField")}</span>
                                             <input
                                                 class="input"
                                                 maxlength={120}
@@ -284,7 +273,7 @@ export default function Moderation() {
                                         </label>
 
                                         <label>
-                                            <span>Описание</span>
+                                            <span>{t("moderation.description")}</span>
                                             <textarea
                                                 class="input textarea"
                                                 maxlength={1000}
@@ -302,7 +291,7 @@ export default function Moderation() {
                                         </label>
 
                                         <label>
-                                            <span>Рейтинг</span>
+                                            <span>{t("moderation.rating")}</span>
                                             <select
                                                 class="input rating-select"
                                                 classList={{
@@ -325,18 +314,20 @@ export default function Moderation() {
                                                     )
                                                 }
                                             >
-                                                <option value="SAFE">SAFE</option>
+                                                <option value="SAFE">
+                                                    {t("ratings.SAFE")}
+                                                </option>
                                                 <option value="QUESTIONABLE">
-                                                    QUESTIONABLE
+                                                    {t("ratings.QUESTIONABLE")}
                                                 </option>
                                                 <option value="EXPLICIT">
-                                                    EXPLICIT
+                                                    {t("ratings.EXPLICIT")}
                                                 </option>
                                             </select>
                                         </label>
 
                                         <label>
-                                            <span>Теги</span>
+                                            <span>{t("moderation.tags")}</span>
                                             <input
                                                 class="input"
                                                 value={tagsInput()}
@@ -355,15 +346,15 @@ export default function Moderation() {
                                                             .filter(Boolean),
                                                     );
                                                 }}
-                                                placeholder="nature, city, night"
+                                                placeholder={t("common.tagsPlaceholder")}
                                             />
                                             <small class="input-hint">
-                                                Разделяйте теги запятыми.
+                                                {t("common.tagsHint")}
                                             </small>
                                         </label>
 
                                         <label>
-                                            <span>Предложенные теги</span>
+                                            <span>{t("moderation.suggestedTags")}</span>
                                             <input
                                                 class="input"
                                                 value={
@@ -379,13 +370,13 @@ export default function Moderation() {
                                             />
                                             <Show when={hasSuggestedTags()}>
                                                 <small class="input-hint form-error">
-                                                    Очистите поле перед одобрением.
+                                                    {t("moderation.suggestedTagsHint")}
                                                 </small>
                                             </Show>
                                         </label>
 
                                         <label>
-                                            <span>Источник</span>
+                                            <span>{t("moderation.source")}</span>
                                             <input
                                                 class="input"
                                                 type="url"
@@ -410,7 +401,7 @@ export default function Moderation() {
                                             <div class="reject-form">
                                                 <label>
                                                     <span>
-                                                        Причина отклонения
+                                                        {t("moderation.rejectionReason")}
                                                     </span>
 
                                                     <textarea
@@ -423,7 +414,9 @@ export default function Moderation() {
                                                                     .value,
                                                             )
                                                         }
-                                                        placeholder="Укажите причину..."
+                                                        placeholder={t(
+                                                            "moderation.rejectionReasonPlaceholder",
+                                                        )}
                                                         maxlength={1000}
                                                     />
                                                 </label>
@@ -437,8 +430,8 @@ export default function Moderation() {
                                                         onClick={reject}
                                                     >
                                                         {actionLoading()
-                                                            ? "Отклонение..."
-                                                            : "Отклонить"}
+                                                            ? t("moderation.rejecting")
+                                                            : t("moderation.reject")}
                                                     </button>
 
                                                     <button
@@ -453,7 +446,7 @@ export default function Moderation() {
                                                             setReason("");
                                                         }}
                                                     >
-                                                        Отмена
+                                                        {t("common.cancel")}
                                                     </button>
                                                 </div>
                                             </div>
@@ -467,7 +460,7 @@ export default function Moderation() {
                                                     setRejecting(true)
                                                 }
                                             >
-                                                Отклонить
+                                                {t("moderation.reject")}
                                             </button>
 
                                             <button
@@ -480,7 +473,7 @@ export default function Moderation() {
                                             >
                                                 {actionLoading()
                                                     ? "..."
-                                                    : "Одобрить"}
+                                                    : t("moderation.approve")}
                                             </button>
                                         </div>
                                     </Show>
