@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.6.0](https://github.com/kroshhaker2/kr-web/compare/v1.5.0...v1.6.0) (2026-09-26)
+
+
+### Features
+
+* Add tags admin page ([7703b24](https://github.com/kroshhaker2/kr-web/commit/7703b24550025c2e0be851c07e4b2145fc0815a8))
+* Add tags search ([17d0b29](https://github.com/kroshhaker2/kr-web/commit/17d0b29a6d2230a00935309246028921280d1138))
+
 ## [1.5.0](https://github.com/kroshhaker2/kr-web/compare/v1.4.0...v1.5.0) (2026-09-26)
 
 
