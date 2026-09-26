@@ -108,7 +108,7 @@ export const ru = {
         loading: "Загрузка очереди…",
         emptyTitle: "Очередь пуста",
         emptyDescription: "Все посты проверены.",
-        author: "Автор",
+        uploader: "Выложил",
         status: "Статус",
         uploadedAt: "Загружен",
         moderatedAt: "Проверен",

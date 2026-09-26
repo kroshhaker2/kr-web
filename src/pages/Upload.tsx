@@ -170,9 +170,7 @@ export default function Upload() {
 
                             <h1>{t("upload.successTitle")}</h1>
 
-                            <p>
-                                {t("upload.successDescription")}
-                            </p>
+                            <p>{t("upload.successDescription")}</p>
 
                             <div class="upload-success-actions">
                                 <button
@@ -310,7 +308,7 @@ export default function Upload() {
                                 onInput={(event) =>
                                     setTitle(event.currentTarget.value)
                                 }
-                                placeholder={t("upload.namePlaceholder")}
+                                placeholder={t("common.optional")}
                             />
                         </label>
 
@@ -335,10 +333,14 @@ export default function Upload() {
                                 class="input"
                                 value={rating()}
                                 onChange={(event) =>
-                                    setRating(event.currentTarget.value as Rating)
+                                    setRating(
+                                        event.currentTarget.value as Rating,
+                                    )
                                 }
                             >
-                                <option value="SAFE">{t("ratings.SAFE")}</option>
+                                <option value="SAFE">
+                                    {t("ratings.SAFE")}
+                                </option>
                                 <option value="QUESTIONABLE">
                                     {t("ratings.QUESTIONABLE")}
                                 </option>

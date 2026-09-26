@@ -192,7 +192,7 @@ export default function Moderation() {
                                 <aside class="moderation-info">
                                     <dl class="moderation-details">
                                         <div>
-                                            <dt>{t("moderation.author")}</dt>
+                                            <dt>{t("moderation.uploader")}</dt>
                                             <dd>
                                                 {post().uploadedBy?.username ??
                                                     t("common.unknown")}

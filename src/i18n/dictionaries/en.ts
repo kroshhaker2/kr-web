@@ -114,7 +114,7 @@ export const en: DictionaryShape<typeof ru> = {
         loading: "Loading queue…",
         emptyTitle: "The queue is empty",
         emptyDescription: "All posts have been reviewed.",
-        author: "Author",
+        uploader: "Uploader",
         status: "Status",
         uploadedAt: "Uploaded",
         moderatedAt: "Reviewed",
