@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/kroshhaker2/kr-web/compare/v1.2.1...v1.3.0) (2026-09-26)
+
+
+### Features
+
+* **admin:** Add moderation ([2a348b1](https://github.com/kroshhaker2/kr-web/commit/2a348b14da20fd437a0d867e496d808c21dd850d))
+
 ## [1.2.1](https://github.com/kroshhaker2/kr-web/compare/v1.2.0...v1.2.1) (2026-09-24)
 
 
