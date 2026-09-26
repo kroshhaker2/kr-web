@@ -89,13 +89,15 @@ export const AdminTagsResponseSchema = z
         z.object({ content: z.array(AdminTagSchema) }),
         z.object({ tags: z.array(AdminTagSchema) }),
         z.object({ content: z.object({ tags: z.array(AdminTagSchema) }) }),
+        z.object({ content: z.object({ data: z.array(AdminTagSchema) }) }),
     ])
     .transform((value) => {
         if (Array.isArray(value)) return value;
         if ("tags" in value) return value.tags;
-        return Array.isArray(value.content)
-            ? value.content
-            : value.content.tags;
+        if (Array.isArray(value.content)) return value.content;
+        return "tags" in value.content
+            ? value.content.tags
+            : value.content.data;
     });
 
 export type TagType = z.infer<typeof TagTypeSchema>;

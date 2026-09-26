@@ -241,6 +241,27 @@ body {
     color: var(--accent);
 }
 
+.gallery-filters {
+    width: calc(100% - 40px);
+    max-width: 1560px;
+    margin: 20px auto 0;
+    padding: 14px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface);
+}
+
+.gallery-tags-filter {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.gallery-tags-filter > span {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}
+
 .pictures {
     display: flex;
     align-items: flex-start;
@@ -879,13 +900,15 @@ select.input {
     background: var(--surface);
 }
 
-.upload-form label {
+.upload-form label,
+.upload-field {
     display: flex;
     flex-direction: column;
     gap: 6px;
 }
 
-.upload-form label > span {
+.upload-form label > span,
+.upload-field > span {
     color: var(--text-muted);
     font-size: 0.8rem;
 }
@@ -906,6 +929,117 @@ select.input {
 .input-hint {
     color: var(--text-muted);
     font-size: 0.7rem;
+}
+
+.tag-input {
+    position: relative;
+}
+
+.tag-input-control {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    min-height: 2.5rem;
+    padding: 5px 8px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+    cursor: text;
+    transition: border-color 0.15s ease;
+}
+
+.tag-input-control.is-focused {
+    border-color: var(--accent);
+}
+
+.tag-input-control input {
+    flex: 1 1 12rem;
+    min-width: 8rem;
+    height: 1.75rem;
+    padding: 0;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: var(--text);
+    font-family: "IBM Plex Mono", monospace;
+}
+
+.tag-input-control input::placeholder {
+    color: var(--text-muted);
+}
+
+.tag-input-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    min-width: 0;
+    padding: 3px 5px 3px 7px;
+    border: 1px solid var(--accent-dim);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.72rem;
+}
+
+.tag-input-chip button {
+    display: grid;
+    place-items: center;
+    width: 1rem;
+    height: 1rem;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+}
+
+.tag-input-chip button:hover {
+    color: var(--danger);
+}
+
+.tag-suggestions {
+    position: absolute;
+    z-index: 20;
+    top: calc(100% + 4px);
+    right: 0;
+    left: 0;
+    max-height: 15rem;
+    margin: 0;
+    padding: 4px;
+    overflow-y: auto;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.24);
+    list-style: none;
+}
+
+.tag-suggestions li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.tag-suggestions li.active,
+.tag-suggestions li:hover {
+    background: var(--surface-hover);
+}
+
+.tag-suggestions span {
+    overflow: hidden;
+    font-family: "IBM Plex Mono", monospace;
+    text-overflow: ellipsis;
+}
+
+.tag-suggestions small {
+    flex: none;
+    color: var(--text-muted);
+    font-size: 0.68rem;
 }
 
 .upload-submit {

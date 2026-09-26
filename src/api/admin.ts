@@ -67,7 +67,7 @@ export async function moderatePost(
 }
 
 export async function getAdminTags(): Promise<AdminTag[]> {
-    const response = await fetch(`${API}/admin/tags`, {
+    const response = await fetch(`${API}/tags`, {
         credentials: "include",
     });
 
@@ -80,7 +80,7 @@ export async function getAdminTags(): Promise<AdminTag[]> {
 }
 
 export async function createAdminTag(tag: TagInput): Promise<void> {
-    const response = await fetch(`${API}/admin/tags`, {
+    const response = await fetch(`${API}/tags`, {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -96,7 +96,7 @@ export async function updateAdminTag(
     id: number,
     tag: TagInput,
 ): Promise<void> {
-    const response = await fetch(`${API}/admin/tags/${id}`, {
+    const response = await fetch(`${API}/tags/${id}`, {
         method: "PUT",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -109,7 +109,7 @@ export async function updateAdminTag(
 }
 
 export async function deleteAdminTag(id: number): Promise<void> {
-    const response = await fetch(`${API}/admin/tags/${id}`, {
+    const response = await fetch(`${API}/tags/${id}`, {
         method: "DELETE",
         credentials: "include",
     });

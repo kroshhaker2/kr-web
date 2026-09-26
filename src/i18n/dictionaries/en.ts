@@ -20,8 +20,9 @@ export const en: DictionaryShape<typeof ru> = {
         optional: "Optional",
         theme: "Theme",
         signIn: "Sign in",
-        tagsPlaceholder: "nature, city, night",
-        tagsHint: "Separate tags with commas.",
+        tagsPlaceholder: "Start typing a tag…",
+        tagsHint: "Choose a tag from the suggestions. Up to 30 tags.",
+        removeTag: "Remove tag",
     },
     navigation: {
         previous: "← Previous",
@@ -30,6 +31,8 @@ export const en: DictionaryShape<typeof ru> = {
         dashboard: "← Dashboard",
     },
     gallery: {
+        filters: "Gallery filters",
+        tags: "Tags",
         empty: "There is nothing on this page.",
         loadError: "Could not load images. Check that the server is running.",
         like: "Like",

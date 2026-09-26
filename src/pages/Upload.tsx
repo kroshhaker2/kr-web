@@ -5,6 +5,7 @@ import type { Rating } from "@/types/post";
 import { useI18n } from "@/i18n/context";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import ErrorList from "@/components/ErrorList";
+import TagInput from "@/components/TagInput";
 
 export default function Upload() {
     const navigate = useNavigate();
@@ -15,7 +16,7 @@ export default function Upload() {
 
     const [title, setTitle] = createSignal("");
     const [description, setDescription] = createSignal("");
-    const [tags, setTags] = createSignal("");
+    const [tags, setTags] = createSignal<string[]>([]);
     const [rating, setRating] = createSignal<Rating>("SAFE");
 
     const [dragging, setDragging] = createSignal(false);
@@ -139,16 +140,11 @@ export default function Upload() {
         setError(null);
 
         try {
-            const parsedTags = tags()
-                .split(",")
-                .map((tag) => tag.trim())
-                .filter(Boolean);
-
             await createPost({
                 file: currentFile,
                 title: title().trim(),
                 description: description().trim(),
-                tags: parsedTags,
+                tags: tags(),
                 rating: rating(),
             });
 
@@ -190,7 +186,7 @@ export default function Upload() {
                                         clearFile();
                                         setTitle("");
                                         setDescription("");
-                                        setTags("");
+                                        setTags([]);
                                         setRating("SAFE");
                                     }}
                                 >
@@ -353,23 +349,15 @@ export default function Upload() {
                             </select>
                         </label>
 
-                        <label>
+                        <div class="upload-field">
                             <span>{t("upload.tags")}</span>
 
-                            <input
-                                class="input"
-                                type="text"
-                                value={tags()}
-                                onInput={(event) =>
-                                    setTags(event.currentTarget.value)
-                                }
-                                placeholder={t("common.tagsPlaceholder")}
-                            />
+                            <TagInput value={tags()} onChange={setTags} />
 
                             <small class="input-hint">
                                 {t("common.tagsHint")}
                             </small>
-                        </label>
+                        </div>
 
                         <ErrorList
                             error={error()}

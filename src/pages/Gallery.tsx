@@ -2,6 +2,7 @@ import { createSignal, onMount, Show } from "solid-js";
 
 import TopBar from "@/components/TopBar";
 import Pins from "@/components/Pins";
+import TagInput from "@/components/TagInput";
 import { getPosts } from "@/api/posts";
 import type { Post } from "@/types/post";
 import { useI18n, type TranslationKey } from "@/i18n/context";
@@ -13,6 +14,7 @@ export default function Gallery() {
     const [totalPages, setTotalPages] = createSignal(1);
     const [loading, setLoading] = createSignal(false);
     const [error, setError] = createSignal<TranslationKey | null>(null);
+    const [tags, setTags] = createSignal<string[]>([]);
 
     async function loadPosts(targetPage = page()) {
         setLoading(true);
@@ -60,6 +62,13 @@ export default function Gallery() {
                 onPage={(targetPage) => void loadPosts(targetPage)}
                 user={null}
             />
+
+            <section class="gallery-filters" aria-label={t("gallery.filters")}>
+                <div class="gallery-tags-filter">
+                    <span>{t("gallery.tags")}</span>
+                    <TagInput value={tags()} onChange={setTags} />
+                </div>
+            </section>
 
             <Show when={loading()}>
                 <div class="status">{t("common.loading")}</div>

@@ -14,8 +14,9 @@ export const ru = {
         optional: "Необязательно",
         theme: "Тема",
         signIn: "Войти",
-        tagsPlaceholder: "nature, city, night",
-        tagsHint: "Разделяйте теги запятыми.",
+        tagsPlaceholder: "Начните вводить тег…",
+        tagsHint: "Выберите тег из подсказок. Не более 30 тегов.",
+        removeTag: "Удалить тег",
     },
     navigation: {
         previous: "← Назад",
@@ -24,6 +25,8 @@ export const ru = {
         dashboard: "← Панель управления",
     },
     gallery: {
+        filters: "Фильтры галереи",
+        tags: "Теги",
         empty: "На этой странице ничего нет.",
         loadError: "Не удалось загрузить изображения. Проверьте, запущен ли сервер.",
         like: "Поставить отметку «Нравится»",
